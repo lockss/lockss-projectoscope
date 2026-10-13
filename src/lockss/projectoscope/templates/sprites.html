@@ -1,0 +1,12 @@
+{#
+ # Macros for Bootstrap Icons
+ #}
+
+{#
+ # Macro: sprite
+ #}
+{% macro sprite(name, clazz='bi', width=32, height=32) %}
+<svg class="{{ clazz }}" width="{{ width }}" height="{{ height }}" fill="currentColor" aria-hidden="true">
+  <use href="{{ url_for('static', path='images/bootstrap-icons.svg') }}#{{ name }}"></use>
+</svg>
+{% endmacro %}{# sprite #}

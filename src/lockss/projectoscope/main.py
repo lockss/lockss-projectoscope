@@ -55,8 +55,8 @@ def root(req: Request) -> Response:
 
 
 @app.get('/home', response_class=HTMLResponse)
-def login(req: Request) -> Response:
-    return templates.TemplateResponse(req, 'debug.html', context={'msg': 'HOME'})
+def home(req: Request) -> Response:
+    return templates.TemplateResponse(req, 'base.html')
 
 
 @app.get('/login', response_class=HTMLResponse)

@@ -1,0 +1,24 @@
+{#
+ # Fragment for the header.
+ #
+ # Inspired by headers/index.html in Bootstrap 5.3 Examples.
+ #}
+{% from 'sprites.html' import sprite with context %}
+<header class="py-3 mb-3 border-bottom">
+  <div class="container-fluid d-grid gap-3 align-items-center" style="grid-template-columns: 1fr 2fr">
+    {# Menu #}
+    <div class="dropdown">
+      <a href="#" class="d-flex align-items-center col-lg-4 mb-2 mb-lg-0 link-body-emphasis text-decoration-none dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Main Menu">{{ sprite('list', clazz='bi me-2', width=40, height=32) }}</a>
+      <ul class="dropdown-menu text-small shadow">
+        <li>
+          <a class="dropdown-item active" href="{{ url_for('home') }}" aria-current="page">Home</a>
+        </li>
+        <li><hr class="dropdown-divider" /></li>
+      </ul>
+    </div>
+    {# Color mode toggle #}
+    <div class="d-flex align-items-center justify-content-end">
+      {% include 'color-modes.html' %}
+    </div>
+  </div>
+</header>

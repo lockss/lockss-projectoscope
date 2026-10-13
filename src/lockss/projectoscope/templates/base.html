@@ -1,0 +1,30 @@
+<!doctype html>{# first, to placate HTML syntax highlighter #}
+{% from 'color-modes.html' import color_modes_head with context %}
+<html lang="en" data-bs-theme="auto">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title><% block portal_title %>Projectoscope<% endblock portal_title %></title>
+    {# Bootstrap #}
+    {{ color_modes_head() }}
+    <link href="{{ url_for('static', path='css/bootstrap.min.css') }}" rel="stylesheet" />
+    <meta name="theme-color" content="{{ theme_color | default('#867c69') }}" />
+  </head>
+  <body>
+    {# Header #}
+    {% include 'header.html' %}
+    {# Main #}
+    <div class="container-fluid pb-3">
+      <div class="d-grid gap-3" style="grid-template-columns: 1fr 2fr">
+        <div class="bg-body-tertiary border rounded-3">
+          <br /><br /><br /><br /><br /><br /><br /><br /><br /><br />
+        </div>
+        <div class="bg-body-tertiary border rounded-3">
+          <br /><br /><br /><br /><br /><br /><br /><br /><br /><br />
+        </div>
+      </div>
+    </div>
+    {# Bootstrap #}
+    <script src="{{ url_for('static', path='js/bootstrap.bundle.min.js') }}"></script>
+  </body>
+</html>
