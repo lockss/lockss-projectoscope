@@ -1,0 +1,13 @@
+# Poetry artifacts
+/poetry.lock
+
+# Python artifacts
+/**/__pycache__
+/**/*.py[co]
+
+# PyCharm artifacts
+/.idea/
+
+# Testing artifacts
+/ca.crt
+
