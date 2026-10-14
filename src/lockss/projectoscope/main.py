@@ -35,14 +35,21 @@ from fastapi.templating import Jinja2Templates
 from fastapi_ldap import LDAPAuth, LDAPSettings, get_current_user, require_groups
 from fastapi_ldap.models import LDAPUser
 
+
+_ldap_base_dn: str = 'dc=lockss,dc=org'
+
+
 settings = LDAPSettings(
     ldap_url='ldaps://sul-lockss-thibvm1.stanford.edu:636',
-    ldap_base_dn='dc=lockss,dc=org',
-    bind_dn='uid=admin,cn=users,cn=accounts,dc=lockss,dc=org',
-    tls_ca_cert_file='ca.crt'
+    ldap_base_dn=_ldap_base_dn,
+    bind_dn='uid=admin,cn=users,cn=accounts,dc=lockss,dc=org', # FIXME
+    tls_ca_cert_file='ca.crt',
+    user_search_base=f'cn=users,cn=accounts,{_ldap_base_dn}',
+    group_search_base=f'cn=groups,cn=accounts,{_ldap_base_dn}',
 )
 
 ldap_auth = LDAPAuth(settings)
+
 
 app = FastAPI(lifespan=ldap_auth.lifespan)
 app.mount('/static', StaticFiles(directory='src/lockss/projectoscope/static'), name='static')
@@ -62,3 +69,8 @@ def home(req: Request) -> Response:
 @app.get('/login', response_class=HTMLResponse)
 def login(req: Request) -> Response:
     return templates.TemplateResponse(req, 'login.html')
+
+
+@app.get('/ldap-test')
+async def ldap_test(user: LDAPUser = Depends(get_current_user)):
+    return repr(user)

@@ -3,7 +3,7 @@
  # Base template.
  #}
 {% from 'color-modes.html' import color_modes_head with context %}
-<html lang="en" data-bs-theme="auto">
+<html lang="en" class="h-100" data-bs-theme="auto">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -13,20 +13,22 @@
     <link href="{{ url_for('static', path='css/bootstrap.min.css') }}" rel="stylesheet" />
     <meta name="theme-color" content="{{ theme_color | default('#867c69') }}" />
   </head>
-  <body>
+  <body class="d-flex flex-column h-100">
     {# Header #}
     {% include 'header.html' %}
     {# Main #}
     <div class="container-fluid pb-2">
       <div class="d-grid gap-2" style="grid-template-columns: 1fr 2fr">
-        <div class="bg-body-tertiary border rounded">
+        <div class="border rounded">
           <br /><br /><br /><br /><br /><br /><br /><br /><br /><br />
         </div>
-        <div class="bg-body-tertiary border rounded">
+        <div class="border rounded">
           <br /><br /><br /><br /><br /><br /><br /><br /><br /><br />
         </div>
       </div>
     </div>
+    {# Footer #}
+    {% include 'footer.html' %}
     {# Bootstrap #}
     <script src="{{ url_for('static', path='js/bootstrap.bundle.min.js') }}"></script>
   </body>
