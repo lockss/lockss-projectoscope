@@ -18,32 +18,34 @@
  # Note: The symbols bd-theme and bd-theme-text appear in color-modes.js
  #}
 {% from 'sprites.html' import sprite with context %}
-<div class="dropdown bd-theme">
-  <button class="btn btn-link px-0 px-lg-2 py-2 dropdown-toggle d-flex align-items-center" id="bd-theme" type="button" aria-expanded="false" data-bs-toggle="dropdown"  aria-label="Toggle color mode (auto)">
-    {{ sprite('circle-half', clazz='bi my-1 theme-icon-active') }}
-    <span class="d-lg-none ms-2" id="bd-theme-text">Toggle color mode</span>
-  </button>
-  <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="bd-theme-text">
-    <li>
-      <button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="light" aria-pressed="false">
-        {{ sprite('sun-fill', clazz='bi me-2 opacity-50') }}
-        Light
-        {{ sprite('check2', clazz='bi ms-auto d-none') }}
-      </button>
-    </li>
-    <li>
-      <button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="dark" aria-pressed="false">
-        {{ sprite('moon-stars-fill', clazz='bi me-2 opacity-50') }}
-        Dark
-        {{ sprite('check2', clazz='bi ms-auto d-none') }}
-      </button>
-    </li>
-    <li>
-      <button type="button" class="dropdown-item d-flex align-items-center active" data-bs-theme-value="auto" aria-pressed="true">
-        {{ sprite('circle-half', clazz='bi me-2 opacity-50') }}
-        Auto
-        {{ sprite('check2', clazz='bi ms-auto d-none') }}
-      </button>
-    </li>
-  </ul>
+<div class="container">
+  <div class="dropdown bd-theme">
+    <button class="btn btn-link px-0 px-lg-2 py-2 dropdown-toggle d-flex align-items-center border rounded" id="bd-theme" type="button" aria-expanded="false" data-bs-toggle="dropdown"  aria-label="Toggle color mode (auto)">
+      {{ sprite('circle-half', clazz='bi my-1 theme-icon-active') }}
+      <span class="d-lg-none ms-2" id="bd-theme-text">Toggle color mode</span>
+    </button>
+    <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="bd-theme-text">
+      <li>
+        <button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="light" aria-pressed="false">
+          {{ sprite('sun-fill', clazz='bi me-2 opacity-50') }}
+          Light
+          {{ sprite('check2', clazz='bi ms-auto d-none') }}
+        </button>
+      </li>
+      <li>
+        <button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="dark" aria-pressed="false">
+          {{ sprite('moon-stars-fill', clazz='bi me-2 opacity-50') }}
+          Dark
+          {{ sprite('check2', clazz='bi ms-auto d-none') }}
+        </button>
+      </li>
+      <li>
+        <button type="button" class="dropdown-item d-flex align-items-center active" data-bs-theme-value="auto" aria-pressed="true">
+          {{ sprite('circle-half', clazz='bi me-2 opacity-50') }}
+          Auto
+          {{ sprite('check2', clazz='bi ms-auto d-none') }}
+        </button>
+      </li>
+    </ul>
+  </div>
 </div>
