@@ -3,6 +3,7 @@
  # Base template.
  #}
 {% from 'color-modes.html' import color_modes_head with context %}
+{% from 'sprites.html' import sprites_head %}
 <html lang="en" class="h-100" data-bs-theme="auto">
   <head>
     <meta charset="utf-8" />
@@ -10,7 +11,8 @@
     <title>{{ portal_title | default('Projectoscope') }}</title>
     {# Bootstrap #}
     {{ color_modes_head() }}
-    <link href="{{ url_for('static', path='css/bootstrap.min.css') }}" rel="stylesheet" />
+    {{ sprites_head() }}
+    <link href="{{ url_for('css', path='bootstrap.min.css') }}" rel="stylesheet" />
     <meta name="theme-color" content="{{ theme_color | default('#867c69') }}" />
   </head>
   <body class="d-flex flex-column h-100">
@@ -30,6 +32,6 @@
     {# Footer #}
     {% include 'footer.html' %}
     {# Bootstrap #}
-    <script src="{{ url_for('static', path='js/bootstrap.bundle.min.js') }}"></script>
+    <script src="{{ url_for('js', path='bootstrap.bundle.min.js') }}"></script>
   </body>
 </html>

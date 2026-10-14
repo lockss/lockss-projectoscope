@@ -52,7 +52,9 @@ ldap_auth = LDAPAuth(settings)
 
 
 app = FastAPI(lifespan=ldap_auth.lifespan)
-app.mount('/static', StaticFiles(directory='src/lockss/projectoscope/static'), name='static')
+app.mount('/static/css', StaticFiles(directory='src/lockss/projectoscope/static/css'), name='css')
+app.mount('/static/images', StaticFiles(directory='src/lockss/projectoscope/static/images'), name='images')
+app.mount('/static/js', StaticFiles(directory='src/lockss/projectoscope/static/js'), name='js')
 templates = Jinja2Templates(directory='src/lockss/projectoscope/templates')
 
 

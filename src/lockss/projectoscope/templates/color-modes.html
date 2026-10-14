@@ -5,11 +5,11 @@
 {#
  # Macro: color_modes_head
  #
- # Adds <script> and <style> elements for the <head>
+ # Adds <script> and <link> elements for the <head>
  #}
 {% macro color_modes_head() %}
-<script src="{{ url_for('static', path='js/color-modes.js') }}"></script>
-<link href="{{ url_for('static', path='css/color-modes.css') }}" rel="stylesheet" />
+<script src="{{ url_for('js', path='color-modes.js') }}"></script>
+<link href="{{ url_for('css', path='color-modes.css') }}" rel="stylesheet" />
 {% endmacro %}{# color_modes_head #}
 
 {#
@@ -20,7 +20,7 @@
 {% from 'sprites.html' import sprite with context %}
 <div class="container">
   <div class="dropdown bd-theme">
-    <button class="btn btn-link px-0 px-lg-2 py-2 dropdown-toggle d-flex align-items-center border rounded" id="bd-theme" type="button" aria-expanded="false" data-bs-toggle="dropdown"  aria-label="Toggle color mode (auto)">
+    <button class="btn btn-link px-1 px-lg-2 py-2 dropdown-toggle d-flex align-items-center border rounded" id="bd-theme" type="button" aria-expanded="false" data-bs-toggle="dropdown"  aria-label="Toggle color mode (auto)">
       {{ sprite('circle-half', clazz='bi my-1 theme-icon-active') }}
       <span class="d-lg-none ms-2" id="bd-theme-text">Toggle color mode</span>
     </button>

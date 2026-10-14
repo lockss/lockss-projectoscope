@@ -3,10 +3,24 @@
  #}
 
 {#
+ # Macro: sprite_head
+ #
+ # Adds <script> and <link> elements for the <head>
+ #}
+{% macro sprites_head() %}
+<style>
+.bi {
+  vertical-align: -0.125em;
+  fill: currentColor;
+}
+</style>
+{% endmacro %}{# sprites_head #}
+
+{#
  # Macro: sprite
  #}
 {% macro sprite(name, clazz='bi', width=32, height=32) %}
 <svg class="{{ clazz }}" width="{{ width }}" height="{{ height }}" fill="currentColor" aria-hidden="true">
-  <use href="{{ url_for('static', path='images/bootstrap-icons.svg') }}#{{ name }}"></use>
+  <use href="{{ url_for('images', path='bootstrap-icons.svg') }}#{{ name }}"></use>
 </svg>
 {% endmacro %}{# sprite #}
