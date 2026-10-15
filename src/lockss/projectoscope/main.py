@@ -28,12 +28,28 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from secrets import token_bytes
+
 from fastapi import Depends, FastAPI, Request, Response
 from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.security import APIKeyCookie
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi_ldap import LDAPAuth, LDAPSettings, get_current_user, require_groups
 from fastapi_ldap.models import LDAPUser
+import jwt
+
+
+_ONE_TIME_SECRET_KEY = token_bytes(32)
+
+
+SESSION_COOKIE_NAME: str = 'projectoscope_session'
+
+
+cookie_scheme: APIKeyCookie = APIKeyCookie(name=SESSION_COOKIE_NAME)
+
+
+conditional_cookie_scheme: APIKeyCookie = APIKeyCookie(name=SESSION_COOKIE_NAME, auto_error=False)
 
 
 _ldap_base_dn: str = 'dc=lockss,dc=org'
@@ -65,7 +81,7 @@ def root(req: Request) -> Response:
 
 @app.get('/home', response_class=HTMLResponse)
 def home(req: Request) -> Response:
-    return templates.TemplateResponse(req, 'base.html')
+    return templates.TemplateResponse(req, 'layout-sidebar-left.html')
 
 
 @app.get('/login', response_class=HTMLResponse)

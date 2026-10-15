@@ -1,6 +1,21 @@
 {#
- # Fragment (and macro) for the color mode toggle
+ # Fragment (and macro) for the color mode toggle. Must be imported with context.
+ #
+ # Inspired by https://getbootstrap.com/docs/5.3/examples/
+ #
+ # Macros defined:
+ # - color_modes_default
+ # - color_modes_head
  #}
+
+{#
+ # Macro: color_modes_default
+ #
+ # Returns the default color mode for:
+ # - html data-bs-theme
+ # - button#bd-theme aria-label
+ #}
+{% macro color_modes_default() %}auto{% endmacro %}{# color_modes_default #}
 
 {#
  # Macro: color_modes_head
@@ -20,7 +35,7 @@
 {% from 'sprites.html' import sprite with context %}
 <div class="container">
   <div class="dropdown bd-theme">
-    <button class="btn btn-link px-1 px-lg-2 py-2 dropdown-toggle d-flex align-items-center border rounded" id="bd-theme" type="button" aria-expanded="false" data-bs-toggle="dropdown"  aria-label="Toggle color mode (auto)">
+    <button class="btn btn-link p-2 dropdown-toggle d-flex align-items-center border rounded" id="bd-theme" type="button" aria-expanded="false" data-bs-toggle="dropdown" aria-label="Toggle color mode ({{ color_modes_default() }})">
       {{ sprite('circle-half', clazz='bi my-1 theme-icon-active') }}
       <span class="d-lg-none ms-2" id="bd-theme-text">Toggle color mode</span>
     </button>

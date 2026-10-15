@@ -1,37 +1,98 @@
-<!doctype html>{# first, to placate HTML syntax highlighter #}
+<!doctype html>{# first, to placate the HTML syntax highlighter #}
 {#
  # Base template.
+ #
+ # Blocks defined:
+ # - head
+ #   - head_content
+ # - header
+ #   - main_nav
+ #     - main_nav_content
+ # - main_layout (required)
+ # - footer
+ #   - footer_content
+ # - body_end
  #}
-{% from 'color-modes.html' import color_modes_head with context %}
-{% from 'sprites.html' import sprites_head %}
-<html lang="en" class="h-100" data-bs-theme="auto">
+{% from 'color-modes.html' import color_modes_default, color_modes_head with context %}
+{% from 'sprites.html' import sprites_head with context %}
+<html lang="en" class="h-100" data-bs-theme="{{ color_modes_default() }}">
+  {% block head %}
   <head>
+    {% block head_content %}
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{{ portal_title | default('Projectoscope') }}</title>
-    {# Bootstrap #}
-    {{ color_modes_head() }}
     {{ sprites_head() }}
+    {{ color_modes_head() }}
     <link href="{{ url_for('css', path='bootstrap.min.css') }}" rel="stylesheet" />
     <meta name="theme-color" content="{{ theme_color | default('#867c69') }}" />
+    {% endblock head_content %}
   </head>
+  {% endblock head %}
   <body class="d-flex flex-column h-100">
-    {# Header #}
-    {% include 'header.html' %}
-    {# Main #}
-    <div class="container-fluid pb-2">
-      <div class="d-grid gap-2" style="grid-template-columns: 1fr 2fr">
-        <div class="border rounded">
-          <br /><br /><br /><br /><br /><br /><br /><br /><br /><br />
-        </div>
-        <div class="border rounded">
-          <br /><br /><br /><br /><br /><br /><br /><br /><br /><br />
+    {% block header %}
+    <header class="py-2 mb-2 border-bottom">
+      <div class="d-flex align-items-center justify-content-between">
+        {% block main_nav %}
+        <nav class="navbar">
+          <div class="container-fluid">
+            <button class="navbar-toggler me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar" aria-label="Toggle navigation">
+              <span class="navbar-toggler-icon"></span>
+            </button>
+            <a class="navbar-brand" href="{{ url_for('home') }}">{{ portal_title | default('Projectoscope') }}</a>
+            <div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
+              <div class="offcanvas-header">
+                <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Main Menu</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+              </div>
+              <div class="offcanvas-body">
+                {% block main_nav_content %}
+                <ul class="navbar-nav justify-content-end flex-grow-1 pe-2">
+                  <li class="nav-item">
+                    <a class="nav-link active" aria-current="page" href="#">Home</a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="#">Link</a>
+                  </li>
+                  <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                      Dropdown
+                    </a>
+                    <ul class="dropdown-menu">
+                      <li><a class="dropdown-item" href="#">Action</a></li>
+                      <li><a class="dropdown-item" href="#">Another action</a></li>
+                      <li>
+                        <hr class="dropdown-divider">
+                      </li>
+                      <li><a class="dropdown-item" href="#">Something else here</a></li>
+                    </ul>
+                  </li>
+                </ul>
+                {% endblock main_nav_content %}
+              </div>
+            </div>
+          </div>
+        </nav>
+        {% endblock main_nav %}
+        <div>
+          {% include 'color-modes.html' %}
         </div>
       </div>
-    </div>
-    {# Footer #}
-    {% include 'footer.html' %}
-    {# Bootstrap #}
+    </header>
+    {% endblock header %}
+    {% block main_layout required %}
+    {% endblock main_layout %}
+    {% block footer %}
+    <footer class="mt-auto py-2 border-top">
+      <div class="container-fluid d-flex align-items-center justify-content-end">
+        {% block footer_content %}
+        <span style="font-size: .5em;">Projectoscope{% if projectoscope_version is defined %} version {{ projectoscope_version }}{% endif %}</span>
+        {% endblock footer_content %}
+      </div>
+    </footer>
+    {% endblock footer %}
+    {% block body_end %}
     <script src="{{ url_for('js', path='bootstrap.bundle.min.js') }}"></script>
+    {% endblock body_end %}
   </body>
 </html>

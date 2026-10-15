@@ -1,0 +1,24 @@
+{#
+ # Concrete base template (from base.html) with a main area and a sidebar to the left.
+ #
+ # Blocks defined:
+ # - main_class
+ # - main_content
+ # - sidebar_class
+ # - sidebar_content
+ #}
+{% extends 'base.html' %}
+{% block main_layout %}
+<div class="container-fluid pb-2">
+  <div class="d-grid gap-2" style="grid-template-columns: 2fr 1fr">
+    <main class="{% block main_class %}border rounded{% endblock main_class %}">
+      {% block main_content %}
+      {% endblock main_content %}
+    </main>
+    <aside class="{% block sidebar_class %}border rounded{% endblock sidebar_class %}">
+      {% block sidebar_content %}
+      {% endblock sidebar_content %}
+    </aside>
+  </div>
+</div>
+{% endblock main_layout %}
