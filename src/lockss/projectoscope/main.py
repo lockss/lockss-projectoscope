@@ -28,19 +28,26 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from datetime import datetime, timedelta, UTC
 from secrets import token_bytes
+from typing import Annotated
 
-from fastapi import Depends, FastAPI, Request, Response
+from fastapi import Depends, FastAPI, Form, HTTPException, Request, Response, status as HttpStatus
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.security import APIKeyCookie
+from fastapi.security import APIKeyCookie, HTTPBasicCredentials
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi_ldap import LDAPAuth, LDAPSettings, get_current_user, require_groups
-from fastapi_ldap.models import LDAPUser
-import jwt
+from fastapi_ldap import LDAPAuth, LDAPConnectionError, LDAPSettings, LDAPUser, get_current_user as ldap_get_current_user, require_groups
+from jwt import PyJWTError, decode as jwt_decode, encode as jet_encode
 
 
-_ONE_TIME_SECRET_KEY = token_bytes(32)
+_ONE_TIME_SECRET_KEY: bytes = token_bytes(32)
+
+
+JWT_ALGORITHM: str = 'HS256'
+
+
+JWT_DURATION: timedelta = timedelta(hours=8)
 
 
 SESSION_COOKIE_NAME: str = 'projectoscope_session'
@@ -64,6 +71,7 @@ settings = LDAPSettings(
     group_search_base=f'cn=groups,cn=accounts,{_ldap_base_dn}',
 )
 
+
 ldap_auth = LDAPAuth(settings)
 
 
@@ -74,21 +82,77 @@ app.mount('/static/js', StaticFiles(directory='src/lockss/projectoscope/static/j
 templates = Jinja2Templates(directory='src/lockss/projectoscope/templates')
 
 
-@app.get('/', response_class=HTMLResponse)
-def root(req: Request) -> Response:
-    return templates.TemplateResponse(req, 'index.html')
+async def get_current_user(token: Annotated[str, Depends(cookie_scheme)]) -> LDAPUser:
+    try:
+        payload = jwt_decode(token, _ONE_TIME_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+    except PyJWTError as je:
+        raise HTTPException(status_code=HttpStatus.HTTP_401_UNAUTHORIZED, detail='Invalid token')
+    try:
+        return await ldap_get_current_user(HTTPBasicCredentials(username=payload.get('sub'), password=payload.get('x-pas')))
+    except LDAPConnectionError as lce:
+        raise HTTPException(HttpStatus.HTTP_503_SERVICE_UNAVAILABLE, detail='LDAP backend unavailable') from lce
+    except HTTPException as he:
+        # Intercept the WWW-Authenticate:Basic header fastapi-ldap returns with 401
+        if he.status_code == HttpStatus.HTTP_401_UNAUTHORIZED and he.headers:
+            # he.headers is a Mapping, not a MutableMapping
+            he.headers = {k: v for k, v in he.headers if k != 'WWW-Authenticate'} or None
+        raise
 
 
-@app.get('/home', response_class=HTMLResponse)
-def home(req: Request) -> Response:
+async def get_current_user_or_none(token: Annotated[str | None, Depends(conditional_cookie_scheme)]) -> LDAPUser | None:
+    if token is None:
+        return None
+    try:
+        return await get_current_user(token)
+    except HTTPException as he:
+        if he.status_code == HttpStatus.HTTP_401_UNAUTHORIZED:
+            return None
+        raise
+
+
+def redirect_to_login() -> RedirectResponse:
+    return RedirectResponse('/login', status_code=HttpStatus.HTTP_303_SEE_OTHER)
+
+
+@app.get('/')
+def root(user: Annotated[LDAPUser | None, Depends(get_current_user)]) -> RedirectResponse:
+    return RedirectResponse('/home' if user else '/login', status_code=HttpStatus.HTTP_303_SEE_OTHER)
+
+
+@app.get('/home')
+def home(req: Request, user: LDAPUser = Depends(get_current_user)) -> HTMLResponse:
     return templates.TemplateResponse(req, 'layout-sidebar-left.html')
 
 
-@app.get('/login', response_class=HTMLResponse)
-def login(req: Request) -> Response:
-    return templates.TemplateResponse(req, 'login.html')
+@app.get('/login', response_model=None)
+def login(user: Annotated[LDAPUser | None, Depends(get_current_user_or_none)], req: Request) -> RedirectResponse | HTMLResponse:
+    return RedirectResponse('/home', status_code=HttpStatus.HTTP_303_SEE_OTHER) if user else templates.TemplateResponse(req, 'login.html')
+
+
+@app.post("/login", response_model=None)
+async def login(form_data: Annotated[HTTPBasicCredentials, Form()], req: Request) -> RedirectResponse | HTMLResponse:
+    try:
+        ldap_user: LDAPUser = await ldap_get_current_user(form_data)
+    except LDAPConnectionError as lce:
+        raise HTTPException(HttpStatus.HTTP_503_SERVICE_UNAVAILABLE, detail='LDAP backend unavailable') from lce
+    except HTTPException as he:
+        if he.status_code == (sc401 := HttpStatus.HTTP_401_UNAUTHORIZED):
+            return templates.TemplateResponse(req, 'login.html', status_code=sc401, context={'alert_type': 'danger', 'alert': 'Error: Invalid username or password.'})
+        raise he
+    payload = {'sub': form_data.username, 'x-pas': form_data.password, 'exp': (exp := datetime.now(UTC) + JWT_DURATION)}
+    token: str = jet_encode(payload, _ONE_TIME_SECRET_KEY, JWT_ALGORITHM)
+    resp = RedirectResponse('/home', status_code=HttpStatus.HTTP_303_SEE_OTHER)
+    resp.set_cookie(key=SESSION_COOKIE_NAME, value=token, httponly=True, secure=False, samesite='lax', expires=exp) # FIXME
+    return resp
+
+
+@app.get('/logout')
+def logout() -> RedirectResponse:
+    resp: RedirectResponse = redirect_to_login()
+    resp.delete_cookie(SESSION_COOKIE_NAME)
+    return resp
 
 
 @app.get('/ldap-test')
 async def ldap_test(user: LDAPUser = Depends(get_current_user)):
-    return repr(user)
+    return user
