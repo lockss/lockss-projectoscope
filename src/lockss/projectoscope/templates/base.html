@@ -50,7 +50,7 @@
                   {% block main_nav_content %}
                   <ul class="navbar-nav justify-content-end flex-grow-1 pe-2">
                     <li class="nav-item">
-                      <a class="nav-link active" aria-current="page" href="/home">Home</a>
+                      <a class="nav-link active" aria-current="page" href="/home">{{ sprite('house-door') }} Home</a>
                     </li>
                   </ul>
                   {% endblock main_nav_content %}
@@ -65,7 +65,7 @@
           {% if ldap_user is defined %}
           <div class="dropdown">
             <button class="btn btn-link p-2 dropdown-toggle d-flex align-items-center border rounded" id="account-dropdown" type="button" aria-expanded="false" data-bs-toggle="dropdown" aria-label="Account">
-              {{ sprite('person-square', clazz='bi my-1 theme-icon-active') }}
+              {{ sprite('person', clazz='bi my-1 theme-icon-active') }}
               <span class="d-lg-none ms-2" id="bd-theme-text">Account</span>
             </button>
             <ul class="dropdown-menu dropdown-menu-end shadow">

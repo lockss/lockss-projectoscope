@@ -4,11 +4,6 @@
 
  /* Note: the symbol bd-theme appears in color-modes.js */
 
-.bd-theme .bi {
-  width: 1em;
-  height: 1em;
-}
-
 .bd-theme .dropdown-menu .active .bi {
   display: block !important;
 }
