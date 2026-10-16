@@ -14,7 +14,7 @@
  # - body_end
  #}
 {% from 'color-modes.html' import color_modes_default, color_modes_head with context %}
-{% from 'sprites.html' import sprites_head with context %}
+{% from 'sprites.html' import sprite, sprites_head with context %}
 <html lang="en" class="h-100" data-bs-theme="{{ color_modes_default() }}">
   {% block head %}
   <head>
@@ -34,35 +34,47 @@
     <header class="py-2 mb-2 border-bottom">
       <div class="d-flex align-items-center justify-content-between">
         {% block main_nav %}
-        <nav class="navbar">
-          <div class="container-fluid">
-            <button class="navbar-toggler me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar" aria-label="Toggle navigation">
-              <span class="navbar-toggler-icon"></span>
-            </button>
-            <a class="navbar-brand" href="{{ url_for('home') }}">{{ portal_title | default('Projectoscope') }}</a>
-            <div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
-              <div class="offcanvas-header">
-                <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Main Menu</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-              </div>
-              <div class="offcanvas-body">
-                {% block main_nav_content %}
-                <ul class="navbar-nav justify-content-end flex-grow-1 pe-2">
-                  <li class="nav-item">
-                    <a class="nav-link active" aria-current="page" href="/home">Home</a>
-                  </li>
-                  <li class="nav-item">
-                    <a class="nav-link" href="/logout">Log out</a>
-                  </li>
-                </ul>
-                {% endblock main_nav_content %}
+        <div class="container d-flex align-items-center gap-1">
+          <nav class="navbar">
+            <div class="container-fluid">
+              <button class="navbar-toggler me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+              </button>
+              <a class="navbar-brand" href="{{ url_for('home') }}">{{ portal_title | default('Projectoscope') }}</a>
+              <div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
+                <div class="offcanvas-header">
+                  <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Main Menu</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+                </div>
+                <div class="offcanvas-body">
+                  {% block main_nav_content %}
+                  <ul class="navbar-nav justify-content-end flex-grow-1 pe-2">
+                    <li class="nav-item">
+                      <a class="nav-link active" aria-current="page" href="/home">Home</a>
+                    </li>
+                  </ul>
+                  {% endblock main_nav_content %}
+                </div>
               </div>
             </div>
-          </div>
-        </nav>
+          </nav>
+        </div>
         {% endblock main_nav %}
-        <div>
+        <div class="container d-flex align-items-center justify-content-end gap-1">
           {% include 'color-modes.html' %}
+          {% if ldap_user is defined %}
+          <div class="dropdown">
+            <button class="btn btn-link p-2 dropdown-toggle d-flex align-items-center border rounded" id="account-dropdown" type="button" aria-expanded="false" data-bs-toggle="dropdown" aria-label="Account">
+              {{ sprite('person-square', clazz='bi my-1 theme-icon-active') }}
+              <span class="d-lg-none ms-2" id="bd-theme-text">Account</span>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow">
+              <li><span class="dropdown-header">{{ ldap_user.display_name }}</span></li>
+              <li><a class="dropdown-item" href="#">{{ sprite('person-gear') }} Account</a></li>
+              <li><a class="dropdown-item" href="/logout">{{ sprite('door-closed') }} Log out</a></li>
+            </ul>
+          </div>
+          {% endif %}
         </div>
       </div>
     </header>

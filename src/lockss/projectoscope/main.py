@@ -59,16 +59,13 @@ cookie_scheme: APIKeyCookie = APIKeyCookie(name=SESSION_COOKIE_NAME)
 conditional_cookie_scheme: APIKeyCookie = APIKeyCookie(name=SESSION_COOKIE_NAME, auto_error=False)
 
 
-_ldap_base_dn: str = 'dc=lockss,dc=org'
-
-
 settings = LDAPSettings(
     ldap_url='ldaps://sul-lockss-thibvm1.stanford.edu:636',
-    ldap_base_dn=_ldap_base_dn,
-    bind_dn='uid=admin,cn=users,cn=accounts,dc=lockss,dc=org', # FIXME
+    ldap_base_dn=(bdn := 'dc=lockss,dc=org'),
+    bind_dn=f'uid=admin,cn=users,cn=accounts,{bdn}', # FIXME
     tls_ca_cert_file='ca.crt',
-    user_search_base=f'cn=users,cn=accounts,{_ldap_base_dn}',
-    group_search_base=f'cn=groups,cn=accounts,{_ldap_base_dn}',
+    user_search_base=f'cn=users,cn=accounts,{bdn}',
+    group_search_base=f'cn=groups,cn=accounts,{bdn}',
 )
 
 
@@ -121,7 +118,7 @@ def root(user: Annotated[LDAPUser | None, Depends(get_current_user)]) -> Redirec
 
 @app.get('/home')
 def home(req: Request, user: LDAPUser = Depends(get_current_user)) -> HTMLResponse:
-    return templates.TemplateResponse(req, 'layout-sidebar-left.html')
+    return templates.TemplateResponse(req, 'layout-sidebar-left.html', context=dict(ldap_user=user))
 
 
 @app.get('/login', response_model=None)
