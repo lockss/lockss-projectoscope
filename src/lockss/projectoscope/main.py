@@ -32,8 +32,10 @@ from contextlib import asynccontextmanager, AsyncExitStack
 from datetime import datetime, timedelta, UTC
 import os
 from secrets import token_bytes
-from typing import Annotated
+from typing import Annotated, ClassVar
+from uuid import UUID
 
+import bcrypt
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -42,29 +44,85 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi_ldap import LDAPAuth, LDAPConnectionError, LDAPSettings, LDAPUser, get_current_user as ldap_get_current_user
 from jwt import PyJWTError, decode as jwt_decode, encode as jet_encode
-from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
-from sqlmodel import SQLModel
-from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker as AsyncSessionMaker, create_async_engine
+from sqlmodel import SQLModel, and_, or_
+from starlette.middleware.sessions import SessionMiddleware
 from starlette.status import HTTP_303_SEE_OTHER, HTTP_401_UNAUTHORIZED, HTTP_503_SERVICE_UNAVAILABLE
+from starlette_admin.auth import AdminUser, AuthProvider, LoginFailed
+from starlette_admin.contrib.sqla import Admin, ModelView
 
-from .models.users import User
+from .models.users import User, StarletteAdminAdminUser
 
 
 load_dotenv()
 
 
+# See https://jowilf.github.io/starlette-admin/user-guide/auth/#authprovider-built-in-sign-in-page
+class StarletteAdminAuthProvider(AuthProvider):
+
+    SESSION_IDENTIFIER: ClassVar[str] = 'starlette_admin_session_uuid'
+
+    async def login(self, username: str, password: str, remember_me: bool, request: Request) -> None:
+        # NOTE: 'username' here is meant as User.username or User.email
+        async with myapp.sessionmaker() as session:
+            def _fail():
+                raise LoginFailed('Invalid credentials')
+            query = select(User).where(and_(or_(User.username == username, User.email == username), User.is_active == True, User.is_admin == True))
+            user: User | None = (await session.scalars(query)).first()
+            if not user or not bcrypt.checkpw(password.encode(), user.hashed_password.encode()):
+                raise LoginFailed('Invalid credentials')
+            request.session[StarletteAdminAuthProvider.SESSION_IDENTIFIER] = str(user.id)
+            return None
+
+    async def authenticate(self, request: Request) -> AdminUser | None:
+        uuid_str: str | None = request.session.get(StarletteAdminAuthProvider.SESSION_IDENTIFIER)
+        if not uuid_str:
+            print(f'{uuid_str=}')
+            return None
+        try:
+            uuid: UUID = UUID(uuid_str)
+        except ValueError as ve:
+            print(f'{uuid_str=} {ve=}')
+            return None
+        async with myapp.sessionmaker() as session:
+            query = select(User).where(and_(User.id == uuid))
+            user: User | None = (await session.scalars(query)).first()
+            if not user:
+                print(f'{uuid_str=} {user=}')
+                return None
+            print(StarletteAdminAdminUser(username=user.username, uuid=user.id))
+            return StarletteAdminAdminUser(username=user.username, uuid=user.id)
+
+    async def logout(self, request: Request) -> None:
+        request.session.clear()
+        return None
+
+
+class UserView(ModelView):
+    fields = ['id', 'username', 'display_name', 'email', 'is_active', 'is_admin', 'is_superuser']
+    searchable_fields = ['id', 'username', 'display_name', 'email']
+
+
 class MyApp:
 
     engine: AsyncEngine
+    sessionmaker: AsyncSessionMaker
     app: FastAPI
     templates: Jinja2Templates
 
     def __init__(self):
+        self.engine = create_async_engine(os.environ['DATABASE_URL'], echo=True)
+        self.sessionmaker = AsyncSessionMaker(self.engine, expire_on_commit=False)
         self.app = FastAPI(lifespan=self.lifespan)
         self.app.mount('/static/css', StaticFiles(directory='src/lockss/projectoscope/static/css'), name='css')
         self.app.mount('/static/images', StaticFiles(directory='src/lockss/projectoscope/static/images'), name='images')
         self.app.mount('/static/js', StaticFiles(directory='src/lockss/projectoscope/static/js'), name='js')
         self.templates = Jinja2Templates(directory='src/lockss/projectoscope/templates')
+        self.app.add_middleware(SessionMiddleware, secret_key=os.environ['STARLETTE_ADMIN_SECRET_KEY'])
+        admin = Admin(self.engine, auth_provider=StarletteAdminAuthProvider(), title='Projectoscope Admin', secret_key=os.environ['STARLETTE_ADMIN_SECRET_KEY'])
+        admin.add_view(UserView(User, icon="fa fa-users"))
+        admin.mount_to(self.app)
 
     @asynccontextmanager
     async def lifespan(self, app: FastAPI):
@@ -75,7 +133,6 @@ class MyApp:
 
     @asynccontextmanager
     async def lifespan_db(self, app: FastAPI):
-        self.engine = create_async_engine(os.environ['DATABASE_URL'], echo=True)
         async with self.engine.begin() as conn:
             # await conn.run_sync(SQLModel.metadata.drop_all)
             await conn.run_sync(SQLModel.metadata.create_all)

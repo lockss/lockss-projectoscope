@@ -28,10 +28,12 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from dataclasses import dataclass
 from uuid import UUID, uuid4
 
 from pydantic import EmailStr
 from sqlmodel import Field, SQLModel
+from starlette_admin.auth import AdminUser
 
 
 class UserBase(SQLModel):
@@ -61,3 +63,8 @@ class UserUpdate(SQLModel):
     is_active: bool | None = None
     is_admin: bool | None = None
     is_superuser: bool | None = None
+
+
+@dataclass
+class StarletteAdminAdminUser(AdminUser):
+    uuid: UUID | None = None # To satisfy dataclass inheritance, but should never be None
