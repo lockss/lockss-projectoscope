@@ -1,0 +1,63 @@
+#!/usr/bin/env python3
+
+# Copyright (c) 2000-2026, Board of Trustees of Leland Stanford Jr. University
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice,
+# this list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+# this list of conditions and the following disclaimer in the documentation
+# and/or other materials provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its contributors
+# may be used to endorse or promote products derived from this software without
+# specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+from uuid import UUID, uuid4
+
+from pydantic import EmailStr
+from sqlmodel import Field, SQLModel
+
+
+class UserBase(SQLModel):
+    username: str = Field(unique=True, index=True, nullable=False, title='Username')
+    display_name: str = Field(nullable=False, title='Name')
+    email: EmailStr = Field(unique=True, index=True, nullable=False, title='E-mail')
+
+
+class User(UserBase, table=True):
+    __tablename__ = 'users'
+    id: UUID | None = Field(default_factory=uuid4, primary_key=True, index=True, title='UUID')
+    hashed_password: str = Field(nullable=False)
+    is_active: bool = Field(default=True, title='Active')
+    is_admin: bool = Field(default=False, title='Administrator')
+    is_superuser: bool = Field(default=False, title='Superuser')
+
+
+class UserCreate(UserBase):
+    password: str = Field(title='New Password')
+
+
+class UserUpdate(SQLModel):
+    username: str | None = None
+    display_name: str | None = None
+    email: EmailStr | None = None
+    password: str | None = None
+    is_active: bool | None = None
+    is_admin: bool | None = None
+    is_superuser: bool | None = None

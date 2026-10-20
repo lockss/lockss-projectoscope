@@ -28,17 +28,65 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from contextlib import asynccontextmanager, AsyncExitStack
 from datetime import datetime, timedelta, UTC
+import os
 from secrets import token_bytes
 from typing import Annotated
 
-from fastapi import Depends, FastAPI, Form, HTTPException, Request, Response, status as HttpStatus
+from dotenv import load_dotenv
+from fastapi import Depends, FastAPI, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.security import APIKeyCookie, HTTPBasicCredentials
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi_ldap import LDAPAuth, LDAPConnectionError, LDAPSettings, LDAPUser, get_current_user as ldap_get_current_user, require_groups
+from fastapi_ldap import LDAPAuth, LDAPConnectionError, LDAPSettings, LDAPUser, get_current_user as ldap_get_current_user
 from jwt import PyJWTError, decode as jwt_decode, encode as jet_encode
+from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
+from sqlmodel import SQLModel
+from sqlmodel.ext.asyncio.session import AsyncSession
+from starlette.status import HTTP_303_SEE_OTHER, HTTP_401_UNAUTHORIZED, HTTP_503_SERVICE_UNAVAILABLE
+
+from .models.users import User
+
+
+load_dotenv()
+
+
+class MyApp:
+
+    engine: AsyncEngine
+    app: FastAPI
+    templates: Jinja2Templates
+
+    def __init__(self):
+        self.app = FastAPI(lifespan=self.lifespan)
+        self.app.mount('/static/css', StaticFiles(directory='src/lockss/projectoscope/static/css'), name='css')
+        self.app.mount('/static/images', StaticFiles(directory='src/lockss/projectoscope/static/images'), name='images')
+        self.app.mount('/static/js', StaticFiles(directory='src/lockss/projectoscope/static/js'), name='js')
+        self.templates = Jinja2Templates(directory='src/lockss/projectoscope/templates')
+
+    @asynccontextmanager
+    async def lifespan(self, app: FastAPI):
+        async with AsyncExitStack() as stack:
+            await stack.enter_async_context(self.lifespan_db(app))
+            await stack.enter_async_context(self.lifespan_ldap(app))
+            yield
+
+    @asynccontextmanager
+    async def lifespan_db(self, app: FastAPI):
+        self.engine = create_async_engine(os.environ['DATABASE_URL'], echo=True)
+        async with self.engine.begin() as conn:
+            # await conn.run_sync(SQLModel.metadata.drop_all)
+            await conn.run_sync(SQLModel.metadata.create_all)
+        yield
+        await self.engine.dispose()
+
+    @asynccontextmanager
+    async def lifespan_ldap(self, app: FastAPI):
+        async with LDAPAuth(LDAPSettings()).lifespan(app):
+            yield
+        pass
 
 
 _ONE_TIME_SECRET_KEY: bytes = token_bytes(32)
@@ -59,38 +107,24 @@ cookie_scheme: APIKeyCookie = APIKeyCookie(name=SESSION_COOKIE_NAME)
 conditional_cookie_scheme: APIKeyCookie = APIKeyCookie(name=SESSION_COOKIE_NAME, auto_error=False)
 
 
-settings = LDAPSettings(
-    ldap_url='ldaps://sul-lockss-thibvm1.stanford.edu:636',
-    ldap_base_dn=(bdn := 'dc=lockss,dc=org'),
-    bind_dn=f'uid=admin,cn=users,cn=accounts,{bdn}', # FIXME
-    tls_ca_cert_file='ca.crt',
-    user_search_base=f'cn=users,cn=accounts,{bdn}',
-    group_search_base=f'cn=groups,cn=accounts,{bdn}',
-)
+myapp: MyApp = MyApp()
 
 
-ldap_auth = LDAPAuth(settings)
-
-
-app = FastAPI(lifespan=ldap_auth.lifespan)
-app.mount('/static/css', StaticFiles(directory='src/lockss/projectoscope/static/css'), name='css')
-app.mount('/static/images', StaticFiles(directory='src/lockss/projectoscope/static/images'), name='images')
-app.mount('/static/js', StaticFiles(directory='src/lockss/projectoscope/static/js'), name='js')
-templates = Jinja2Templates(directory='src/lockss/projectoscope/templates')
+app: FastAPI = myapp.app # To be auto-detectable by FastAPI
 
 
 async def get_current_user(token: Annotated[str, Depends(cookie_scheme)]) -> LDAPUser:
     try:
         payload = jwt_decode(token, _ONE_TIME_SECRET_KEY, algorithms=[JWT_ALGORITHM])
     except PyJWTError as je:
-        raise HTTPException(status_code=HttpStatus.HTTP_401_UNAUTHORIZED, detail='Invalid token')
+        raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail='Invalid token')
     try:
         return await ldap_get_current_user(HTTPBasicCredentials(username=payload.get('sub'), password=payload.get('x-pas')))
     except LDAPConnectionError as lce:
-        raise HTTPException(HttpStatus.HTTP_503_SERVICE_UNAVAILABLE, detail='LDAP backend unavailable') from lce
+        raise HTTPException(HTTP_503_SERVICE_UNAVAILABLE, detail='LDAP backend unavailable') from lce
     except HTTPException as he:
         # Intercept the WWW-Authenticate:Basic header fastapi-ldap returns with 401
-        if he.status_code == HttpStatus.HTTP_401_UNAUTHORIZED and he.headers:
+        if he.status_code == HTTP_401_UNAUTHORIZED and he.headers:
             # he.headers is a Mapping, not a MutableMapping
             he.headers = {k: v for k, v in he.headers if k != 'WWW-Authenticate'} or None
         raise
@@ -102,28 +136,28 @@ async def get_current_user_or_none(token: Annotated[str | None, Depends(conditio
     try:
         return await get_current_user(token)
     except HTTPException as he:
-        if he.status_code == HttpStatus.HTTP_401_UNAUTHORIZED:
+        if he.status_code == HTTP_401_UNAUTHORIZED:
             return None
         raise
 
 
 def redirect_to_login() -> RedirectResponse:
-    return RedirectResponse('/login', status_code=HttpStatus.HTTP_303_SEE_OTHER)
+    return RedirectResponse('/login', status_code=HTTP_303_SEE_OTHER)
 
 
 @app.get('/')
 def root(user: Annotated[LDAPUser | None, Depends(get_current_user)]) -> RedirectResponse:
-    return RedirectResponse('/home' if user else '/login', status_code=HttpStatus.HTTP_303_SEE_OTHER)
+    return RedirectResponse('/home' if user else '/login', status_code=HTTP_303_SEE_OTHER)
 
 
 @app.get('/home')
 def home(req: Request, user: LDAPUser = Depends(get_current_user)) -> HTMLResponse:
-    return templates.TemplateResponse(req, 'layout-sidebar-left.html', context=dict(ldap_user=user))
+    return myapp.templates.TemplateResponse(req, 'layout-sidebar-left.html', context=dict(ldap_user=user))
 
 
 @app.get('/login', response_model=None)
 def login(user: Annotated[LDAPUser | None, Depends(get_current_user_or_none)], req: Request) -> RedirectResponse | HTMLResponse:
-    return RedirectResponse('/home', status_code=HttpStatus.HTTP_303_SEE_OTHER) if user else templates.TemplateResponse(req, 'login.html')
+    return RedirectResponse('/home', status_code=HTTP_303_SEE_OTHER) if user else myapp.templates.TemplateResponse(req, 'login.html')
 
 
 @app.post("/login", response_model=None)
@@ -131,14 +165,14 @@ async def login(form_data: Annotated[HTTPBasicCredentials, Form()], req: Request
     try:
         ldap_user: LDAPUser = await ldap_get_current_user(form_data)
     except LDAPConnectionError as lce:
-        raise HTTPException(HttpStatus.HTTP_503_SERVICE_UNAVAILABLE, detail='LDAP backend unavailable') from lce
+        raise HTTPException(HTTP_503_SERVICE_UNAVAILABLE, detail='LDAP backend unavailable') from lce
     except HTTPException as he:
-        if he.status_code == (sc401 := HttpStatus.HTTP_401_UNAUTHORIZED):
-            return templates.TemplateResponse(req, 'login.html', status_code=sc401, context={'alert_type': 'danger', 'alert': 'Error: Invalid username or password.'})
+        if he.status_code == (sc401 := HTTP_401_UNAUTHORIZED):
+            return myapp.templates.TemplateResponse(req, 'login.html', status_code=sc401, context={'alert_type': 'danger', 'alert': 'Error: Invalid username or password.'})
         raise he
     payload = {'sub': form_data.username, 'x-pas': form_data.password, 'exp': (exp := datetime.now(UTC) + JWT_DURATION)}
     token: str = jet_encode(payload, _ONE_TIME_SECRET_KEY, JWT_ALGORITHM)
-    resp = RedirectResponse('/home', status_code=HttpStatus.HTTP_303_SEE_OTHER)
+    resp = RedirectResponse('/home', status_code=HTTP_303_SEE_OTHER)
     resp.set_cookie(key=SESSION_COOKIE_NAME, value=token, httponly=True, secure=False, samesite='lax', expires=exp) # FIXME
     return resp
 

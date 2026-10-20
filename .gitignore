@@ -1,13 +1,19 @@
+# Configuraation assets
+/.env
+/ca.crt
+
+# sqlite-asyncio
+/aiosqlite.db
+
 # Poetry artifacts
 /poetry.lock
 
 # Python artifacts
-/**/__pycache__
+/**/__pycache__/
 /**/*.py[co]
+
+# Doit artifacts
+/.doit.db
 
 # PyCharm artifacts
 /.idea/
-
-# Testing artifacts
-/ca.crt
-
