@@ -31,6 +31,7 @@
 from uuid import UUID, uuid4
 
 from pydantic import EmailStr
+from sqlalchemy import Column, Uuid
 from sqlmodel import Field, SQLModel
 
 
@@ -42,7 +43,7 @@ class UserBase(SQLModel):
 
 class User(UserBase, table=True):
     __tablename__ = 'users'
-    id: UUID | None = Field(default_factory=uuid4, primary_key=True, index=True, title='UUID')
+    id: UUID | None = Field(default_factory=uuid4, sa_type=Uuid(as_uuid=True), primary_key=True, index=True, title='UUID')
     hashed_password: str = Field(nullable=False)
     is_active: bool = Field(default=True, title='Active')
     is_admin: bool = Field(default=False, title='Administrator')

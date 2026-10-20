@@ -33,8 +33,11 @@ from datetime import datetime, timedelta, UTC
 import os
 from secrets import token_bytes
 from typing import Annotated
+from uuid import UUID
 
+import bcrypt
 from dotenv import load_dotenv
+from fastadmin import SqlAlchemyModelAdmin, fastapi_app as admin_app, register
 from fastapi import Depends, FastAPI, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.security import APIKeyCookie, HTTPBasicCredentials
@@ -42,9 +45,9 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi_ldap import LDAPAuth, LDAPConnectionError, LDAPSettings, LDAPUser, get_current_user as ldap_get_current_user
 from jwt import PyJWTError, decode as jwt_decode, encode as jet_encode
-from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
+from sqlalchemy import select, update
+from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker as AsyncSessionMaker, create_async_engine
 from sqlmodel import SQLModel
-from sqlmodel.ext.asyncio.session import AsyncSession
 from starlette.status import HTTP_303_SEE_OTHER, HTTP_401_UNAUTHORIZED, HTTP_503_SERVICE_UNAVAILABLE
 
 from .models.users import User
@@ -56,11 +59,15 @@ load_dotenv()
 class MyApp:
 
     engine: AsyncEngine
+    sessionmaker: AsyncSessionMaker
     app: FastAPI
     templates: Jinja2Templates
 
     def __init__(self):
+        self.engine = create_async_engine(os.environ['DATABASE_URL'], echo=True)
+        self.sessionmaker = AsyncSessionMaker(self.engine, expire_on_commit=False)
         self.app = FastAPI(lifespan=self.lifespan)
+        self.app.mount('/admin', admin_app)
         self.app.mount('/static/css', StaticFiles(directory='src/lockss/projectoscope/static/css'), name='css')
         self.app.mount('/static/images', StaticFiles(directory='src/lockss/projectoscope/static/images'), name='images')
         self.app.mount('/static/js', StaticFiles(directory='src/lockss/projectoscope/static/js'), name='js')
@@ -75,7 +82,6 @@ class MyApp:
 
     @asynccontextmanager
     async def lifespan_db(self, app: FastAPI):
-        self.engine = create_async_engine(os.environ['DATABASE_URL'], echo=True)
         async with self.engine.begin() as conn:
             # await conn.run_sync(SQLModel.metadata.drop_all)
             await conn.run_sync(SQLModel.metadata.create_all)
@@ -111,6 +117,7 @@ myapp: MyApp = MyApp()
 
 
 app: FastAPI = myapp.app # To be auto-detectable by FastAPI
+sessionmaker = myapp.sessionmaker
 
 
 async def get_current_user(token: Annotated[str, Depends(cookie_scheme)]) -> LDAPUser:
@@ -187,3 +194,29 @@ def logout() -> RedirectResponse:
 @app.get('/ldap-test')
 async def ldap_test(user: LDAPUser = Depends(get_current_user)):
     return user
+
+
+@register(User, sqlalchemy_sessionmaker=sessionmaker)
+class UserAdmin(SqlAlchemyModelAdmin):
+    exclude = ('hashed_password',)
+    list_display = ('id', 'username', 'is_active', 'is_admin', 'is_superuser')
+    list_display_links = ('id', 'username')
+    list_filter = ('id', 'username', 'is_superuser', 'is_active')
+    search_fields = ('username',)
+
+    async def authenticate(self, username: str, password: str) -> UUID | int | None:
+        async with myapp.sessionmaker() as session:
+            query = select(User).filter_by(username=username, is_active=True, is_superuser=True)
+            user: User | None = (await session.scalars(query)).first()
+            if not user:
+                return None
+            if not bcrypt.checkpw(password.encode(), user.hashed_password.encode()):
+                return None
+            return user.id
+
+    async def change_password(self, id: UUID | int, password: str) -> None:
+        async with myapp.sessionmaker() as session:
+            newpass: str = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+            query = update(User).where(User.id.in_([id])).values(hashed_password=newpass)
+            await session.execute(query)
+            await session.commit()
