@@ -50,7 +50,7 @@ from sqlmodel import SQLModel, and_, or_
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.status import HTTP_303_SEE_OTHER, HTTP_401_UNAUTHORIZED, HTTP_503_SERVICE_UNAVAILABLE
 from starlette_admin.auth import AdminUser, AuthProvider, LoginFailed
-from starlette_admin.contrib.sqla import Admin, ModelView
+from starlette_admin.contrib.sqlmodel import Admin, ModelView
 
 from .models.users import User, StarletteAdminAdminUser
 
