@@ -90,7 +90,7 @@ class StarletteAdminAuthProvider(AuthProvider):
             if not user:
                 print(f'{uuid_str=} {user=}')
                 return None
-            return StarletteAdminUser(username=user.username, uuid=user.id)
+            return StarletteAdminUser(user)
 
     async def logout(self, request: Request) -> None:
         request.session.clear()
@@ -100,6 +100,9 @@ class StarletteAdminAuthProvider(AuthProvider):
 class UserView(ModelView):
     fields = ['id', 'username', 'display_name', 'email', 'is_active', 'is_admin', 'is_superuser']
     searchable_fields = ['id', 'username', 'display_name', 'email']
+
+    def is_accessible(self, request: Request) -> bool:
+        return request.state.admin_user.user.is_admin
 
     async def validate(self, request: Request, data: dict[str, Any]) -> None:
         UserBase.model_validate(data)

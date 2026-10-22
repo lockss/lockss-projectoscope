@@ -51,6 +51,10 @@ class User(UserBase, table=True):
     hashed_password: str = Field(nullable=False)
 
 
-@dataclass
 class StarletteAdminUser(AdminUser):
-    uuid: UUID | None = None # To satisfy dataclass inheritance, but should never be None
+
+    user: User
+
+    def __init__(self, user: User) -> None:
+        super().__init__(username=user.username, photo_url=None)
+        self.user = user
