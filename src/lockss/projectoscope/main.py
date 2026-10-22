@@ -32,7 +32,7 @@ from contextlib import asynccontextmanager, AsyncExitStack
 from datetime import datetime, timedelta, UTC
 import os
 from secrets import token_bytes
-from typing import Annotated, ClassVar
+from typing import Annotated, Any, ClassVar
 from uuid import UUID
 
 import bcrypt
@@ -52,8 +52,7 @@ from starlette.status import HTTP_303_SEE_OTHER, HTTP_401_UNAUTHORIZED, HTTP_503
 from starlette_admin.auth import AdminUser, AuthProvider, LoginFailed
 from starlette_admin.contrib.sqlmodel import Admin, ModelView
 
-from .models.users import User, StarletteAdminAdminUser
-
+from .models.users import User, StarletteAdminUser, UserBase
 
 load_dotenv()
 
@@ -91,8 +90,7 @@ class StarletteAdminAuthProvider(AuthProvider):
             if not user:
                 print(f'{uuid_str=} {user=}')
                 return None
-            print(StarletteAdminAdminUser(username=user.username, uuid=user.id))
-            return StarletteAdminAdminUser(username=user.username, uuid=user.id)
+            return StarletteAdminUser(username=user.username, uuid=user.id)
 
     async def logout(self, request: Request) -> None:
         request.session.clear()
@@ -102,6 +100,9 @@ class StarletteAdminAuthProvider(AuthProvider):
 class UserView(ModelView):
     fields = ['id', 'username', 'display_name', 'email', 'is_active', 'is_admin', 'is_superuser']
     searchable_fields = ['id', 'username', 'display_name', 'email']
+
+    async def validate(self, request: Request, data: dict[str, Any]) -> None:
+        UserBase.model_validate(data)
 
 
 class MyApp:

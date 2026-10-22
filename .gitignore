@@ -14,6 +14,8 @@
 
 # Doit artifacts
 /.doit.db
+/.doit.db-shm
+/.doit.db-wal
 
 # PyCharm artifacts
 /.idea/

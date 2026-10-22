@@ -40,31 +40,17 @@ class UserBase(SQLModel):
     username: str = Field(unique=True, index=True, nullable=False, title='Username')
     display_name: str = Field(nullable=False, title='Name')
     email: EmailStr = Field(unique=True, index=True, nullable=False, title='E-mail')
+    is_active: bool = Field(default=True, title='Active')
+    is_admin: bool = Field(default=False, title='Administrator')
+    is_superuser: bool = Field(default=False, title='Superuser')
 
 
 class User(UserBase, table=True):
     __tablename__ = 'users'
     id: UUID | None = Field(default_factory=uuid4, primary_key=True, index=True, title='UUID')
     hashed_password: str = Field(nullable=False)
-    is_active: bool = Field(default=True, title='Active')
-    is_admin: bool = Field(default=False, title='Administrator')
-    is_superuser: bool = Field(default=False, title='Superuser')
-
-
-class UserCreate(UserBase):
-    password: str = Field(title='New Password')
-
-
-class UserUpdate(SQLModel):
-    username: str | None = None
-    display_name: str | None = None
-    email: EmailStr | None = None
-    password: str | None = None
-    is_active: bool | None = None
-    is_admin: bool | None = None
-    is_superuser: bool | None = None
 
 
 @dataclass
-class StarletteAdminAdminUser(AdminUser):
+class StarletteAdminUser(AdminUser):
     uuid: UUID | None = None # To satisfy dataclass inheritance, but should never be None
