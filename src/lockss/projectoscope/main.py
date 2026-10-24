@@ -35,7 +35,6 @@ from secrets import token_bytes
 from typing import Annotated, Any, ClassVar
 from uuid import UUID
 
-import bcrypt
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -45,14 +44,17 @@ from fastapi.templating import Jinja2Templates
 from fastapi_ldap import LDAPAuth, LDAPConnectionError, LDAPSettings, LDAPUser, get_current_user as ldap_get_current_user
 from jwt import PyJWTError, decode as jwt_decode, encode as jet_encode
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker as AsyncSessionMaker, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlmodel import SQLModel, and_, or_
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.status import HTTP_303_SEE_OTHER, HTTP_401_UNAUTHORIZED, HTTP_503_SERVICE_UNAVAILABLE
 from starlette_admin.auth import AdminUser, AuthProvider, LoginFailed
-from starlette_admin.contrib.sqlmodel import Admin, ModelView
+from starlette_admin.contrib.sqlmodel import Admin
 
-from .models.users import User, StarletteAdminUser, UserBase
+from .db import AsyncSessionMaker, make_sqlalchemy_async_engine, make_sqlalchemy_async_session_maker
+from .models.users import User, StarletteAdminUser
+from .views.users import UserView
+
 
 load_dotenv()
 
@@ -64,12 +66,12 @@ class StarletteAdminAuthProvider(AuthProvider):
 
     async def login(self, username: str, password: str, remember_me: bool, request: Request) -> None:
         # NOTE: 'username' here is meant as User.username or User.email
-        async with myapp.sessionmaker() as session:
+        async with myapp.session_maker() as session:
             def _fail():
                 raise LoginFailed('Invalid credentials')
-            query = select(User).where(and_(or_(User.username == username, User.email == username), User.is_active == True, User.is_admin == True))
+            query = select(User).where(and_(or_(User.username == username, User.email == username), User.active == True, User.admin == True))
             user: User | None = (await session.scalars(query)).first()
-            if not user or not bcrypt.checkpw(password.encode(), user.hashed_password.encode()):
+            if not user or not user.check_password(password):
                 raise LoginFailed('Invalid credentials')
             request.session[StarletteAdminAuthProvider.SESSION_IDENTIFIER] = str(user.id)
             return None
@@ -84,7 +86,7 @@ class StarletteAdminAuthProvider(AuthProvider):
         except ValueError as ve:
             print(f'{uuid_str=} {ve=}')
             return None
-        async with myapp.sessionmaker() as session:
+        async with myapp.session_maker() as session:
             query = select(User).where(and_(User.id == uuid))
             user: User | None = (await session.scalars(query)).first()
             if not user:
@@ -97,27 +99,16 @@ class StarletteAdminAuthProvider(AuthProvider):
         return None
 
 
-class UserView(ModelView):
-    fields = ['id', 'username', 'display_name', 'email', 'is_active', 'is_admin', 'is_superuser']
-    searchable_fields = ['id', 'username', 'display_name', 'email']
-
-    def is_accessible(self, request: Request) -> bool:
-        return request.state.admin_user.user.is_admin
-
-    async def validate(self, request: Request, data: dict[str, Any]) -> None:
-        UserBase.model_validate(data)
-
-
 class MyApp:
 
     engine: AsyncEngine
-    sessionmaker: AsyncSessionMaker
+    session_maker: AsyncSessionMaker
     app: FastAPI
     templates: Jinja2Templates
 
     def __init__(self):
-        self.engine = create_async_engine(os.environ['DATABASE_URL'], echo=True)
-        self.sessionmaker = AsyncSessionMaker(self.engine, expire_on_commit=False)
+        self.engine = make_sqlalchemy_async_engine(echo=True)
+        self.session_maker = make_sqlalchemy_async_session_maker(self.engine)
         self.app = FastAPI(lifespan=self.lifespan)
         self.app.mount('/static/css', StaticFiles(directory='src/lockss/projectoscope/static/css'), name='css')
         self.app.mount('/static/images', StaticFiles(directory='src/lockss/projectoscope/static/images'), name='images')

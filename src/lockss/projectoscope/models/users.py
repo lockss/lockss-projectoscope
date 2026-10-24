@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from typing import Any, Literal, Callable
 
 # Copyright (c) 2000-2026, Board of Trustees of Leland Stanford Jr. University
 #
@@ -28,27 +29,50 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from dataclasses import dataclass
+import bcrypt
+from typing import Self
 from uuid import UUID, uuid4
 
-from pydantic import EmailStr
+from pydantic import EmailStr, ModelWrapValidatorHandler, ValidationError, model_validator
+from pydantic_core import InitErrorDetails, PydanticCustomError
 from sqlmodel import Field, SQLModel
 from starlette_admin.auth import AdminUser
 
 
 class UserBase(SQLModel):
-    username: str = Field(unique=True, index=True, nullable=False, title='Username')
-    display_name: str = Field(nullable=False, title='Name')
-    email: EmailStr = Field(unique=True, index=True, nullable=False, title='E-mail')
-    is_active: bool = Field(default=True, title='Active')
-    is_admin: bool = Field(default=False, title='Administrator')
-    is_superuser: bool = Field(default=False, title='Superuser')
+    username: str = Field(nullable=False, unique=True, index=True, max_length=20, title='Username')
+    display_name: str = Field(nullable=False, max_length=60, title='Name')
+    email: EmailStr = Field(nullable=False, unique=True, index=True, max_length=60, title='E-mail')
+    active: bool = Field(default=True, title='Active')
+    admin: bool = Field(default=False, title='Administrator')
+    superuser: bool = Field(default=False, title='Superuser')
+
+    @model_validator(mode='wrap')
+    @classmethod
+    def _check_admin(cls, data: Self, handler: ModelWrapValidatorHandler[Self]) -> Self:
+        mi = handler(data)
+        if mi.superuser and not mi.admin:
+            raise ValidationError.from_exception_data(title=cls.__name__,
+                                                      line_errors=[InitErrorDetails(type=PydanticCustomError('value_error', 'A superuser must also be an admin'),
+                                                                                    loc=('admin',),  # Customizes the location tuple
+                                                                                    input=mi.admin)])
+        return mi
 
 
 class User(UserBase, table=True):
     __tablename__ = 'users'
     id: UUID | None = Field(default_factory=uuid4, primary_key=True, index=True, title='UUID')
-    hashed_password: str = Field(nullable=False)
+    hashed_password: str = Field(nullable=False, max_length=60)
+
+    def check_password(self, plaintext_password: str) -> bool:
+        return bcrypt.checkpw(plaintext_password.encode(), self.hashed_password.encode())
+
+    def set_password(self, plaintext_password: str) -> None:
+        self.hashed_password = User.hash_password(plaintext_password)
+
+    @staticmethod
+    def hash_password(plaintext_password: str) -> str:
+        return bcrypt.hashpw(plaintext_password.encode(), bcrypt.gensalt()).decode()
 
 
 class StarletteAdminUser(AdminUser):

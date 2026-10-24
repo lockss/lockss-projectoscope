@@ -28,10 +28,19 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from click_extra import Context, echo, group, pass_context, option_group, show_params_option, timer_option, tree_option
+import asyncio
+from typing import Any
+
+from boltons.dictutils import subdict
+from click_extra import Context, echo, group, pass_context, option, option_group, prompt, show_params_option, timer_option, tree_option
+from dotenv import load_dotenv
 from lockss.pybasic.cliutil import compose_decorators
+from pydantic import ValidationError
+from sqlalchemy.ext.asyncio import AsyncEngine
 
 from . import __copyright__, __license__, __version__
+from .db import AsyncSessionMaker, make_sqlalchemy_async_engine, make_sqlalchemy_async_session_maker
+from .models.users import User, UserBase
 
 
 #: The debug option group: --show-params, --time/--no-time
@@ -57,6 +66,38 @@ _top_level_command = compose_decorators(_debug_option_group, pass_context)
 @_top_level_command
 def copyright(ctx: Context, **kwargs) -> None:
     echo(__copyright__)
+
+
+@projcli.command(help='Create a user in the "users" table of the database.')
+@option_group(
+    'User options',
+    'Interactive prompts if not given.',
+    *[option(f'--{n.replace("_", "-")}', is_flag=True, default=(n == 'is_active'), prompt=f.title, help=f'The user {n.replace("_", " ")}') \
+      if f.annotation == bool \
+      else option(f'--{n.replace("_", "-")}', metavar='TEXT', prompt=f.title, help=f.title)
+      for n, f in UserBase.model_fields.items()]
+)
+@_top_level_command
+def create_user(ctx: Context, **kwargs) -> None:
+    async def _create_user(ctx: Context, **kwargs) -> None:
+        load_dotenv()
+        user_dict: dict[str, Any] = subdict(kwargs, keep=(n for n in UserBase.model_fields))
+        user_dict['hashed_password'] = User.hash_password(prompt('Password', hide_input=True, confirmation_prompt=True))
+        try:
+            user: User = User.model_validate(user_dict)
+        except ValidationError as ve:
+            ctx.fail(str(ve))
+        engine: AsyncEngine = make_sqlalchemy_async_engine()
+        try:
+            session_maker: AsyncSessionMaker = make_sqlalchemy_async_session_maker(engine)
+            async with session_maker() as session:
+                session.add(user)
+                await session.commit()
+                await session.refresh(user)
+                echo(user.model_dump_json(exclude={'hashed_password'}))
+        finally:
+            await engine.dispose()
+    asyncio.run(_create_user(ctx, **kwargs))
 
 
 @projcli.command(help='Show the software license and exit.')
