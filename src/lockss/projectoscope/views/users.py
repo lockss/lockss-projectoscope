@@ -43,5 +43,14 @@ class UserView(SQLModelModelView):
     def is_accessible(self, request: Request) -> bool:
         return request.state.admin_user.user.admin
 
+    def can_create(self, request: Request) -> bool:
+        return False
+
+    def can_delete(self, request: Request) -> bool:
+        return False
+
+    def can_import(self, request: Request) -> bool:
+        return False
+
     def validate_call(self, request: Request, data: dict[str, Any]) -> None:
          UserBase.model_validate(data)
