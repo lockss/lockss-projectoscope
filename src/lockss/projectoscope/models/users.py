@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-from typing import Any, Literal, Callable
 
 # Copyright (c) 2000-2026, Board of Trustees of Leland Stanford Jr. University
 #
@@ -33,10 +32,11 @@ import bcrypt
 from typing import Self
 from uuid import UUID, uuid4
 
-from pydantic import EmailStr, ModelWrapValidatorHandler, ValidationError, model_validator
-from pydantic_core import InitErrorDetails, PydanticCustomError
+from pydantic import EmailStr, ModelWrapValidatorHandler, model_validator
 from sqlmodel import Field, SQLModel
 from starlette_admin.auth import AdminUser
+
+from . import make_field_error
 
 
 class UserBase(SQLModel):
@@ -50,12 +50,9 @@ class UserBase(SQLModel):
     @model_validator(mode='wrap')
     @classmethod
     def _check_admin(cls, data: Self, handler: ModelWrapValidatorHandler[Self]) -> Self:
-        mi = handler(data)
+        mi: Self = handler(data)
         if mi.superuser and not mi.admin:
-            raise ValidationError.from_exception_data(title=cls.__name__,
-                                                      line_errors=[InitErrorDetails(type=PydanticCustomError('value_error', 'A superuser must also be an admin'),
-                                                                                    loc=('admin',),  # Customizes the location tuple
-                                                                                    input=mi.admin)])
+            raise make_field_error(cls, mi, ('admin', 'value_error', 'A user who is a superuser must also be an admin', None))
         return mi
 
 

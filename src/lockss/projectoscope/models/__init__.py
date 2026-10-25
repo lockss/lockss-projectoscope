@@ -27,3 +27,19 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
+
+from typing import Any, LiteralString, NamedTuple, TypeAlias
+
+from pydantic import ValidationError
+from pydantic_core import InitErrorDetails, PydanticCustomError
+
+
+ErrorTuple: TypeAlias = tuple[LiteralString, LiteralString, LiteralString, dict[str, Any] | None]
+
+
+def make_field_error(cls: type, model: Any, *tups: ErrorTuple) -> ValidationError:
+    return ValidationError.from_exception_data(title=cls.__name__,
+                                               line_errors=[InitErrorDetails(loc=(t[0],),
+                                                                             input=getattr(model, t[0]),
+                                                                             type=PydanticCustomError(*t[1:]))
+                                                            for t in tups])
