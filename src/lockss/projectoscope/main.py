@@ -43,9 +43,8 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi_ldap import LDAPAuth, LDAPConnectionError, LDAPSettings, LDAPUser, get_current_user as ldap_get_current_user
 from jwt import PyJWTError, decode as jwt_decode, encode as jet_encode
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncEngine
-from sqlmodel import SQLModel, and_, or_
+from sqlmodel import SQLModel, and_, or_, select
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.status import HTTP_303_SEE_OTHER, HTTP_401_UNAUTHORIZED, HTTP_503_SERVICE_UNAVAILABLE
 from starlette_admin.auth import AdminUser, AuthProvider, LoginFailed

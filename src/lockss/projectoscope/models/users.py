@@ -59,7 +59,7 @@ class UserBase(SQLModel):
 class User(UserBase, table=True):
     __tablename__ = 'users'
     id: UUID | None = Field(default_factory=uuid4, primary_key=True, index=True, title='UUID')
-    hashed_password: str = Field(nullable=False, max_length=60)
+    hashed_password: str = Field(nullable=False, max_length=60, repr=False)
 
     def check_password(self, plaintext_password: str) -> bool:
         return bcrypt.checkpw(plaintext_password.encode(), self.hashed_password.encode())
