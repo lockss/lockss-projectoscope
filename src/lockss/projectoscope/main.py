@@ -116,7 +116,7 @@ class MyApp:
         self.templates = Jinja2Templates(directory='src/lockss/projectoscope/templates')
         self.app.add_middleware(SessionMiddleware, secret_key=os.environ['STARLETTE_ADMIN_SECRET_KEY'])
         admin = Admin(self.engine, auth_provider=StarletteAdminAuthProvider(), title='Projectoscope Admin', secret_key=os.environ['STARLETTE_ADMIN_SECRET_KEY'])
-        admin.add_view(UserView(User, icon="fa fa-users"))
+        admin.add_view(UserView(icon="fa fa-users"))
         admin.mount_to(self.app)
 
     @asynccontextmanager

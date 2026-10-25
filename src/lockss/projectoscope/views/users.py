@@ -28,17 +28,25 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from collections.abc import Sequence
 from typing import Any
 
+from boltons.iterutils import partition
+from boltons.strutils import unit_len
 from starlette.requests import Request
+from starlette_admin import ActionSelection, action, flash
+from starlette_admin.exceptions import ActionFailed
 
 from . import SQLModelModelView
-from ..models.users import UserBase
+from ..models.users import User, UserBase
 
 
 class UserView(SQLModelModelView):
     fields = ['id', 'username', 'display_name', 'email', 'active', 'admin', 'superuser']
     searchable_fields = ['id', 'username', 'display_name', 'email']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(User, *args, **kwargs)
 
     def is_accessible(self, request: Request) -> bool:
         return request.state.admin_user.user.admin
@@ -51,6 +59,50 @@ class UserView(SQLModelModelView):
 
     def can_import(self, request: Request) -> bool:
         return False
+
+    @action(name='deactivate',
+            text='Deactivate',
+            confirmation='Are you sure you want to deactivate the selected users?',
+            submit_btn_text='Confirm',
+            submit_btn_class='btn btn-success')
+    async def deactivate_action(self, request: Request, selection: ActionSelection) -> None:
+        selected: Sequence[User] = await selection.rows()
+        n_selected: int = len(selected)
+        active, inactive = partition(selected, lambda u: u.active)
+        active_superuser, active_nonsuperuser = partition(active, lambda u: u.superuser)
+        if len(active_nonsuperuser) == 0:
+            flash(request, 'No selected users are eligible to be deactivated.', 'error')
+            return
+        for user in active_nonsuperuser:
+            user.active = False
+        flash(request, f'{unit_len(active_nonsuperuser, "selected user")} out of {n_selected} were deactivated.', 'success')
+        if inactive:
+            flash(request, f'{unit_len(inactive, "selected user")} out of {n_selected} were already deactivated.', 'warning')
+        if active_superuser:
+            flash(request, f'{unit_len(active_superuser, "selected user")} out of {n_selected} were superusers and are not eligible to be deactivated.', 'warning')
+        return
+
+    @action(name='reactivate',
+            text='Reactivate',
+            confirmation='Are you sure you want to reactivate the selected users?',
+            submit_btn_text='Confirm',
+            submit_btn_class='btn btn-success')
+    async def reactivate_action(self, request: Request, selection: ActionSelection) -> None:
+        selected: Sequence[User] = await selection.rows()
+        n_selected: int = len(selected)
+        active, inactive = partition(selected, lambda u: u.active)
+        inactive_superuser, inactive_nonsuperuser = partition(inactive, lambda u: u.superuser)
+        if len(inactive_nonsuperuser) == 0:
+            flash(request, 'No selected users are eligible to be reactivated.', 'error')
+            return
+        for user in inactive_nonsuperuser:
+            user.active = True
+        flash(request, f'{unit_len(inactive_nonsuperuser, "selected user")} out of {n_selected} were reactivated.', 'success')
+        if active:
+            flash(request, f'{unit_len(active, "selected user")} out of {n_selected} were already active.', 'warning')
+        if inactive_superuser:
+            flash(request, f'{unit_len(inactive_superuser, "selected user")} out of {n_selected} were superusers and are not eligible to be reactivated.', 'warning')
+        return
 
     def validate_call(self, request: Request, data: dict[str, Any]) -> None:
          UserBase.model_validate(data)
