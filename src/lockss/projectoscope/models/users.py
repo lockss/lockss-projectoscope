@@ -29,7 +29,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import bcrypt
-from typing import Self
+from typing import Final, Self
 from uuid import UUID, uuid4
 
 from pydantic import EmailStr, ModelWrapValidatorHandler, model_validator
@@ -39,8 +39,14 @@ from starlette_admin.auth import AdminUser
 from . import make_field_error
 
 
+BCRYPT_HASH_LENGTH: Final[int] = 60
+
+
+BCRYPT_MAX_BYTES: Final[int] = 72
+
+
 class UserBase(SQLModel):
-    username: str = Field(nullable=False, unique=True, index=True, max_length=20, title='Username')
+    username: str = Field(nullable=False, unique=True, index=True, min_length=1, max_length=20, title='Username')
     display_name: str = Field(nullable=False, max_length=60, title='Name')
     email: EmailStr = Field(nullable=False, unique=True, index=True, max_length=60, title='E-mail')
     active: bool = Field(default=True, title='Active')
@@ -59,17 +65,17 @@ class UserBase(SQLModel):
 class User(UserBase, table=True):
     __tablename__ = 'users'
     id: UUID | None = Field(default_factory=uuid4, primary_key=True, index=True, title='UUID')
-    hashed_password: str = Field(nullable=False, max_length=60, repr=False)
+    hashed_password: str = Field(nullable=False, min_length=BCRYPT_HASH_LENGTH, max_length=BCRYPT_HASH_LENGTH, repr=False)
 
     def check_password(self, plaintext_password: str) -> bool:
-        return bcrypt.checkpw(plaintext_password.encode(), self.hashed_password.encode())
+        return bcrypt.checkpw(plaintext_password.encode()[:BCRYPT_MAX_BYTES], self.hashed_password.encode()[:BCRYPT_MAX_BYTES])
 
     def set_password(self, plaintext_password: str) -> None:
         self.hashed_password = User.hash_password(plaintext_password)
 
     @staticmethod
     def hash_password(plaintext_password: str) -> str:
-        return bcrypt.hashpw(plaintext_password.encode(), bcrypt.gensalt()).decode()
+        return bcrypt.hashpw(plaintext_password.encode()[:BCRYPT_MAX_BYTES], bcrypt.gensalt()).decode()
 
 
 class StarletteAdminUser(AdminUser):

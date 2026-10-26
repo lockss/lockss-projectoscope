@@ -38,6 +38,8 @@ from starlette_admin.exceptions import FormValidationError
 
 
 class SQLModelModelView(ModelView):
+    show_goto_page = True
+    row_click_navigate = False
 
     async def validate(self, request: Request, data: dict[str, Any]) -> None:
         try:

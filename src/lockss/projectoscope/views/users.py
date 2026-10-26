@@ -43,6 +43,8 @@ from ..models.users import User, UserBase
 
 class UserView(SQLModelModelView):
     fields = ['id', 'username', 'display_name', 'email', 'active', 'admin', 'superuser']
+    exclude_fields_from_list = ['id']
+    fields_default_sort = ['username']
     searchable_fields = ['id', 'username', 'display_name', 'email']
 
     def __init__(self, *args, **kwargs):
