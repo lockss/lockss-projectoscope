@@ -54,11 +54,10 @@ class StarletteAdminAuthProvider(AuthProvider):
         super().__init__(login_path=login_path, logout_path=logout_path, allow_routes=allow_routes)
         self.session_maker = session_maker
 
-
     async def login(self, username: str, password: str, remember_me: bool, request: Request) -> None:
-        # NOTE: 'username' here is meant as User.username or User.email
+        # NOTE: 'username' here is meant as User.handle or User.email
         async with self.session_maker() as session:
-            query = select(User).where(and_(or_(User.username == username, User.email == username), User.active == True, User.admin == True))
+            query = select(User).where(and_(or_(User.handle == username, User.email == username), User.active == True, User.admin == True))
             user: User | None = (await session.scalars(query)).first()
             if not user or not user.check_password(password):
                 raise LoginFailed('Invalid credentials')

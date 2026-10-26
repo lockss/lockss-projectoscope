@@ -33,10 +33,12 @@ from typing import Final, Self
 from uuid import UUID, uuid4
 
 from pydantic import EmailStr, ModelWrapValidatorHandler, model_validator
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field, Relationship
+from starlette.requests import Request
 from starlette_admin.auth import AdminUser
 
-from . import make_field_error
+from . import Handle, StrictSQLModel, make_field_error
+from .organizations import Organization
 
 
 BCRYPT_HASH_LENGTH: Final[int] = 60
@@ -45,9 +47,9 @@ BCRYPT_HASH_LENGTH: Final[int] = 60
 BCRYPT_MAX_BYTES: Final[int] = 72
 
 
-class UserBase(SQLModel):
-    username: str = Field(nullable=False, unique=True, index=True, min_length=1, max_length=20, title='Username')
-    display_name: str = Field(nullable=False, max_length=60, title='Name')
+class UserBase(StrictSQLModel):
+    handle: Handle = Field(nullable=False, unique=True, index=True, title='User Handle')
+    name: str = Field(nullable=False, min_length=1, max_length=60, title='Name')
     email: EmailStr = Field(nullable=False, unique=True, index=True, max_length=60, title='E-mail')
     active: bool = Field(default=True, title='Active')
     admin: bool = Field(default=False, title='Administrator')
@@ -67,11 +69,17 @@ class User(UserBase, table=True):
     id: UUID | None = Field(default_factory=uuid4, primary_key=True, index=True, title='UUID')
     hashed_password: str = Field(nullable=False, min_length=BCRYPT_HASH_LENGTH, max_length=BCRYPT_HASH_LENGTH, repr=False)
 
+    organization_id: UUID | None = Field(default=None, foreign_key='organizations.id')
+    organization: Organization | None = Relationship(back_populates='users')
+
     def check_password(self, plaintext_password: str) -> bool:
         return bcrypt.checkpw(plaintext_password.encode()[:BCRYPT_MAX_BYTES], self.hashed_password.encode()[:BCRYPT_MAX_BYTES])
 
     def set_password(self, plaintext_password: str) -> None:
         self.hashed_password = User.hash_password(plaintext_password)
+
+    def __admin_repr__(self, request: Request) -> str:
+        return f'{self.name} ({self.handle})'
 
     @staticmethod
     def hash_password(plaintext_password: str) -> str:
@@ -83,5 +91,5 @@ class StarletteAdminUser(AdminUser):
     user: User
 
     def __init__(self, user: User) -> None:
-        super().__init__(username=user.username, photo_url=None)
+        super().__init__(username=user.handle, photo_url=None)
         self.user = user

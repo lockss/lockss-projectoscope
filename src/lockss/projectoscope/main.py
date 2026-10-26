@@ -50,6 +50,8 @@ from starlette_admin.contrib.sqlmodel import Admin
 
 from .auth import StarletteAdminAuthProvider
 from .db import AsyncSessionMaker, make_sqlalchemy_async_engine, make_sqlalchemy_async_session_maker
+from .views.organizations import OrganizationView
+from .views.preservation_projects import PreservationProjectView
 from .views.users import UserView
 
 
@@ -73,7 +75,9 @@ class MyApp:
         self.templates = Jinja2Templates(directory='src/lockss/projectoscope/templates')
         self.app.add_middleware(SessionMiddleware, secret_key=os.environ['STARLETTE_ADMIN_SECRET_KEY'])
         admin = Admin(self.engine, auth_provider=StarletteAdminAuthProvider(self.session_maker), title='Projectoscope Admin', secret_key=os.environ['STARLETTE_ADMIN_SECRET_KEY'])
-        admin.add_view(UserView(icon="fa fa-users"))
+        admin.add_view(PreservationProjectView())
+        admin.add_view(OrganizationView())
+        admin.add_view(UserView())
         admin.mount_to(self.app)
 
     @asynccontextmanager

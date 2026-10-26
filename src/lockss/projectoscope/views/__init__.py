@@ -33,7 +33,7 @@ from typing import Any
 from pydantic import ValidationError
 from starlette.requests import Request
 from starlette_admin import flash
-from starlette_admin.contrib.sqlmodel.view import ModelView
+from starlette_admin.contrib.sqlmodel import ModelView
 from starlette_admin.exceptions import FormValidationError
 
 

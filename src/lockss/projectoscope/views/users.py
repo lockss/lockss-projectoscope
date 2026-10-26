@@ -35,17 +35,17 @@ from boltons.iterutils import partition
 from boltons.strutils import unit_len
 from starlette.requests import Request
 from starlette_admin import ActionSelection, action, flash
-from starlette_admin.exceptions import ActionFailed
 
 from . import SQLModelModelView
 from ..models.users import User, UserBase
 
 
 class UserView(SQLModelModelView):
-    fields = ['id', 'username', 'display_name', 'email', 'active', 'admin', 'superuser']
+    icon = 'fa fa-circle-user'
+    fields = ['id', 'handle', 'name', 'email', 'organization', 'active', 'admin', 'superuser']
     exclude_fields_from_list = ['id']
-    fields_default_sort = ['username']
-    searchable_fields = ['id', 'username', 'display_name', 'email']
+    fields_default_sort = ['handle']
+    searchable_fields = ['id', 'handle', 'name', 'email']
 
     def __init__(self, *args, **kwargs):
         super().__init__(User, *args, **kwargs)
