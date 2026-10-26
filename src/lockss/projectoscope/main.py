@@ -32,8 +32,7 @@ from contextlib import asynccontextmanager, AsyncExitStack
 from datetime import datetime, timedelta, UTC
 import os
 from secrets import token_bytes
-from typing import Annotated, Any, ClassVar
-from uuid import UUID
+from typing import Annotated
 
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, Form, HTTPException, Request
@@ -42,60 +41,19 @@ from fastapi.security import APIKeyCookie, HTTPBasicCredentials
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi_ldap import LDAPAuth, LDAPConnectionError, LDAPSettings, LDAPUser, get_current_user as ldap_get_current_user
-from jwt import PyJWTError, decode as jwt_decode, encode as jet_encode
+from jwt import PyJWTError, decode as jwt_decode, encode as jwt_encode
 from sqlalchemy.ext.asyncio import AsyncEngine
-from sqlmodel import SQLModel, and_, or_, select
+from sqlmodel import SQLModel
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.status import HTTP_303_SEE_OTHER, HTTP_401_UNAUTHORIZED, HTTP_503_SERVICE_UNAVAILABLE
-from starlette_admin.auth import AdminUser, AuthProvider, LoginFailed
 from starlette_admin.contrib.sqlmodel import Admin
 
+from .auth import StarletteAdminAuthProvider
 from .db import AsyncSessionMaker, make_sqlalchemy_async_engine, make_sqlalchemy_async_session_maker
-from .models.users import User, StarletteAdminUser
 from .views.users import UserView
 
 
 load_dotenv()
-
-
-# See https://jowilf.github.io/starlette-admin/user-guide/auth/#authprovider-built-in-sign-in-page
-class StarletteAdminAuthProvider(AuthProvider):
-
-    SESSION_IDENTIFIER: ClassVar[str] = 'starlette_admin_session_uuid'
-
-    async def login(self, username: str, password: str, remember_me: bool, request: Request) -> None:
-        # NOTE: 'username' here is meant as User.username or User.email
-        async with myapp.session_maker() as session:
-            def _fail():
-                raise LoginFailed('Invalid credentials')
-            query = select(User).where(and_(or_(User.username == username, User.email == username), User.active == True, User.admin == True))
-            user: User | None = (await session.scalars(query)).first()
-            if not user or not user.check_password(password):
-                raise LoginFailed('Invalid credentials')
-            request.session[StarletteAdminAuthProvider.SESSION_IDENTIFIER] = str(user.id)
-            return None
-
-    async def authenticate(self, request: Request) -> AdminUser | None:
-        uuid_str: str | None = request.session.get(StarletteAdminAuthProvider.SESSION_IDENTIFIER)
-        if not uuid_str:
-            print(f'{uuid_str=}')
-            return None
-        try:
-            uuid: UUID = UUID(uuid_str)
-        except ValueError as ve:
-            print(f'{uuid_str=} {ve=}')
-            return None
-        async with myapp.session_maker() as session:
-            query = select(User).where(and_(User.id == uuid))
-            user: User | None = (await session.scalars(query)).first()
-            if not user:
-                print(f'{uuid_str=} {user=}')
-                return None
-            return StarletteAdminUser(user)
-
-    async def logout(self, request: Request) -> None:
-        request.session.clear()
-        return None
 
 
 class MyApp:
@@ -114,7 +72,7 @@ class MyApp:
         self.app.mount('/static/js', StaticFiles(directory='src/lockss/projectoscope/static/js'), name='js')
         self.templates = Jinja2Templates(directory='src/lockss/projectoscope/templates')
         self.app.add_middleware(SessionMiddleware, secret_key=os.environ['STARLETTE_ADMIN_SECRET_KEY'])
-        admin = Admin(self.engine, auth_provider=StarletteAdminAuthProvider(), title='Projectoscope Admin', secret_key=os.environ['STARLETTE_ADMIN_SECRET_KEY'])
+        admin = Admin(self.engine, auth_provider=StarletteAdminAuthProvider(self.session_maker), title='Projectoscope Admin', secret_key=os.environ['STARLETTE_ADMIN_SECRET_KEY'])
         admin.add_view(UserView(icon="fa fa-users"))
         admin.mount_to(self.app)
 
@@ -222,7 +180,7 @@ async def login(form_data: Annotated[HTTPBasicCredentials, Form()], req: Request
             return myapp.templates.TemplateResponse(req, 'login.html', status_code=sc401, context={'alert_type': 'danger', 'alert': 'Error: Invalid username or password.'})
         raise he
     payload = {'sub': form_data.username, 'x-pas': form_data.password, 'exp': (exp := datetime.now(UTC) + JWT_DURATION)}
-    token: str = jet_encode(payload, _ONE_TIME_SECRET_KEY, JWT_ALGORITHM)
+    token: str = jwt_encode(payload, _ONE_TIME_SECRET_KEY, JWT_ALGORITHM)
     resp = RedirectResponse('/home', status_code=HTTP_303_SEE_OTHER)
     resp.set_cookie(key=SESSION_COOKIE_NAME, value=token, httponly=True, secure=False, samesite='lax', expires=exp) # FIXME
     return resp
