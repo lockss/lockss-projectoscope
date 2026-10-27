@@ -52,4 +52,4 @@ class PreservationProject(PreservationProjectBase, table=True):
     organizations: list['Organization'] = Relationship(back_populates='preservation_project')
 
     def __admin_repr__(self, request: Request) -> str:
-        return f'{self.name} ({self.handle})'
+        return f'{self.name}{f" ({sn})" if (sn := self.short_name) else ""}'

@@ -49,11 +49,16 @@ BCRYPT_MAX_BYTES: Final[int] = 72
 
 class UserBase(StrictSQLModel):
     handle: Handle = Field(nullable=False, unique=True, index=True, title='User Handle')
-    name: str = Field(nullable=False, min_length=1, max_length=60, title='Name')
+    first_name: str = Field(nullable=False, min_length=1, max_length=60, title='First Name')
+    last_name: str = Field(nullable=False, min_length=1, max_length=60, title='Last Name')
     email: EmailStr = Field(nullable=False, unique=True, index=True, max_length=60, title='E-mail')
     active: bool = Field(default=True, title='Active')
     admin: bool = Field(default=False, title='Administrator')
     superuser: bool = Field(default=False, title='Superuser')
+
+    # Not a computed_field, just a convenience method
+    def full_name(self) -> str:
+        return f'{self.first_name} {self.last_name}'
 
     @model_validator(mode='wrap')
     @classmethod
@@ -79,7 +84,7 @@ class User(UserBase, table=True):
         self.hashed_password = User.hash_password(plaintext_password)
 
     def __admin_repr__(self, request: Request) -> str:
-        return f'{self.name} ({self.handle})'
+        return f'{self.full_name()} ({self.handle})'
 
     @staticmethod
     def hash_password(plaintext_password: str) -> str:

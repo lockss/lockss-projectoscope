@@ -34,7 +34,7 @@ from typing import Any
 from boltons.iterutils import partition
 from boltons.strutils import unit_len
 from starlette.requests import Request
-from starlette_admin import ActionSelection, action, flash
+from starlette_admin import ActionSelection, ComputedField, action, flash
 
 from . import SQLModelModelView
 from ..models.users import User, UserBase
@@ -42,10 +42,13 @@ from ..models.users import User, UserBase
 
 class UserView(SQLModelModelView):
     icon = 'fa fa-circle-user'
-    fields = ['id', 'handle', 'name', 'email', 'organization', 'active', 'admin', 'superuser']
-    exclude_fields_from_list = ['id']
-    fields_default_sort = ['handle']
-    searchable_fields = ['id', 'handle', 'name', 'email']
+    fields = ['id', 'handle', 'first_name', 'last_name', ComputedField('full_name', getter=lambda req, obj: obj.full_name()), 'email', 'organization', 'active', 'admin', 'superuser']
+    exclude_fields_from_detail = ['first_name', 'last_name']
+    exclude_fields_from_edit = ['full_name']
+    exclude_fields_from_export = ['full_name']
+    exclude_fields_from_list = ['id', 'full_name']
+    fields_default_sort = ['last_name', 'first_name', 'handle']
+    searchable_fields = ['handle', 'first_name', 'last_name', 'email']
 
     def __init__(self, *args, **kwargs):
         super().__init__(User, *args, **kwargs)
