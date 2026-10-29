@@ -39,7 +39,7 @@ class PreservationProjectView(SQLModelModelView):
     icon = 'fa fa-briefcase'
     fields = ['id', 'handle', 'name', 'short_name', HasMany('organizations', key='organization')]
     exclude_fields_from_list = ['id', 'organizations']
-    fields_default_sort = ['handle']
+    fields_default_sort = ['name']
     searchable_fields = ['id', 'handle', 'name', 'short_name']
 
     def __init__(self, *args, **kwargs):

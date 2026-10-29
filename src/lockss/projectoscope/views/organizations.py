@@ -39,7 +39,7 @@ class OrganizationView(SQLModelModelView):
     icon = 'fa fa-people-roof'
     fields = ['id', 'handle', 'name', 'short_name', 'preservation_project', HasMany('users', key='user')]
     exclude_fields_from_list = ['id', 'users']
-    fields_default_sort = ['handle']
+    fields_default_sort = ['name']
     searchable_fields = ['id', 'handle', 'name', 'short_name']
 
     def __init__(self, *args, **kwargs):

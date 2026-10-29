@@ -130,6 +130,8 @@ class ProfileView(ModelView):
     key = 'profile'
     menu_label = 'Profile'
     icon = 'fa fa-address-card'
+    show_goto_page = False
+    row_click_navigate = True
 
     fields = ['id', 'handle', 'first_name', 'last_name',
               ComputedField('full_name', getter=lambda req, obj: obj.full_name()),
