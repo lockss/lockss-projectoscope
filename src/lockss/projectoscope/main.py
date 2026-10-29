@@ -32,7 +32,7 @@ from contextlib import asynccontextmanager, AsyncExitStack
 from datetime import datetime, timedelta, UTC
 import os
 from secrets import token_bytes
-from typing import Annotated
+from typing import Annotated, Any
 
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, Form, HTTPException, Request
@@ -47,12 +47,13 @@ from sqlmodel import SQLModel
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.status import HTTP_303_SEE_OTHER, HTTP_401_UNAUTHORIZED, HTTP_503_SERVICE_UNAVAILABLE
 from starlette_admin.contrib.sqlmodel import Admin
+from starlette_admin.views import Link
 
 from .auth import StarletteAdminAuthProvider
 from .db import AsyncSessionMaker, make_sqlalchemy_async_engine, make_sqlalchemy_async_session_maker
 from .views.organizations import OrganizationView
 from .views.preservation_projects import PreservationProjectView
-from .views.users import UserView
+from .views.users import UserView, ProfileView
 
 
 load_dotenv()
@@ -74,10 +75,19 @@ class MyApp:
         self.app.mount('/static/js', StaticFiles(directory='src/lockss/projectoscope/static/js'), name='js')
         self.templates = Jinja2Templates(directory='src/lockss/projectoscope/templates')
         self.app.add_middleware(SessionMiddleware, secret_key=os.environ['STARLETTE_ADMIN_SECRET_KEY'])
-        admin = Admin(self.engine, auth_provider=StarletteAdminAuthProvider(self.session_maker), title='Projectoscope Admin', secret_key=os.environ['STARLETTE_ADMIN_SECRET_KEY'])
+
+        class MyAdmin(Admin):
+            async def _find_object_or_404(self, request: Request, view: "BaseModelView", key: str | None, pk: str | None, action: str) -> Any:
+                if isinstance(view, ProfileView) and key == 'profile' and (action == 'detail' or action == 'edit'):
+                    pk = request.state.admin_user.user.id
+                return await super()._find_object_or_404(request, view, key, pk, action)
+
+        admin = MyAdmin(self.engine, auth_provider=StarletteAdminAuthProvider(self.session_maker), title='Projectoscope Admin', secret_key=os.environ['STARLETTE_ADMIN_SECRET_KEY'])
         admin.add_view(PreservationProjectView())
         admin.add_view(OrganizationView())
         admin.add_view(UserView())
+        admin.add_view(profile_view := ProfileView()) # FIXME Would like to not be visible in the menu
+        admin.add_link(Link(menu_label='My Profile', icon=ProfileView.icon, url=f'{admin.base_url}/{profile_view.key}/detail'))
         admin.mount_to(self.app)
 
     @asynccontextmanager

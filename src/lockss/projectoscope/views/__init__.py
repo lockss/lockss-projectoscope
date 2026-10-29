@@ -32,9 +32,23 @@ from typing import Any
 
 from pydantic import ValidationError
 from starlette.requests import Request
-from starlette_admin import flash
+from starlette_admin import RequestAction, flash
 from starlette_admin.contrib.sqlmodel import ModelView
 from starlette_admin.exceptions import FormValidationError
+
+
+NON_COMPUTED_FIELD_ACTIONS: frozenset[RequestAction] = frozenset({
+    RequestAction.CREATE,
+    RequestAction.EDIT,
+    RequestAction.EXPORT,
+    RequestAction.IMPORT,
+    RequestAction.LIST,
+})
+
+
+COMPUTED_FIELD_ACTIONS: frozenset[str] = frozenset({
+    RequestAction.DETAIL,
+})
 
 
 class SQLModelModelView(ModelView):

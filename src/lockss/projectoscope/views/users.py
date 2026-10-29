@@ -25,36 +25,37 @@
 # SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
 # INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE# POSSIBILITY OF SUCH DAMAGE.
 
 from collections.abc import Sequence
 from typing import Any
 
 from boltons.iterutils import partition
 from boltons.strutils import unit_len
+from sqlalchemy import Select
+from starlette.status import HTTP_403_FORBIDDEN
+from starlette.exceptions import HTTPException
 from starlette.requests import Request
-from starlette_admin import ActionSelection, ComputedField, action, flash
+from starlette.responses import RedirectResponse, Response
+from starlette_admin import ActionSelection, BaseField, ComputedField, CustomView, PasswordField, RequestAction, action, flash, route
+from starlette_admin.filters import FilterGroup, FilterRegistry
 
-from . import SQLModelModelView
+from . import SQLModelModelView, COMPUTED_FIELD_ACTIONS, NON_COMPUTED_FIELD_ACTIONS
 from ..models.users import User, UserBase
 
 
 class UserView(SQLModelModelView):
     icon = 'fa fa-circle-user'
-    fields = ['id', 'handle', 'first_name', 'last_name', ComputedField('full_name', getter=lambda req, obj: obj.full_name()), 'email', 'organization', 'active', 'admin', 'superuser']
-    exclude_fields_from_detail = ['first_name', 'last_name']
-    exclude_fields_from_edit = ['full_name']
-    exclude_fields_from_export = ['full_name']
-    exclude_fields_from_list = ['id', 'full_name']
+    fields = ['id', 'handle', 'first_name', 'last_name',
+              ComputedField('full_name', getter=lambda req, obj: obj.full_name()),
+              'email',
+              'organization', 'active', 'admin', 'superuser']
+    exclude_fields_from_list = ['id']
     fields_default_sort = ['last_name', 'first_name', 'handle']
     searchable_fields = ['handle', 'first_name', 'last_name', 'email']
 
     def __init__(self, *args, **kwargs):
         super().__init__(User, *args, **kwargs)
-
-    def is_accessible(self, request: Request) -> bool:
-        return request.state.admin_user.user.admin
 
     def can_create(self, request: Request) -> bool:
         return False
@@ -64,6 +65,15 @@ class UserView(SQLModelModelView):
 
     def can_import(self, request: Request) -> bool:
         return False
+
+    def can_access_field(self, request: Request, field: BaseField, action: RequestAction | None = None) -> bool:
+        action = action or request.state.action
+        match field.name:
+            case 'first_name' | 'last_name': # Computed field counterparts
+                return action.name in NON_COMPUTED_FIELD_ACTIONS
+            case 'full_name': # Computed fields
+                return action.name in COMPUTED_FIELD_ACTIONS
+        return super().can_access_field(request, field, action=action)
 
     @action(name='deactivate',
             text='Deactivate',
@@ -109,5 +119,64 @@ class UserView(SQLModelModelView):
             flash(request, f'{unit_len(inactive_superuser, "selected user")} out of {n_selected} were superusers and are not eligible to be reactivated.', 'warning')
         return
 
+    def is_accessible(self, request: Request) -> bool:
+        return (u := request.state.admin_user.user).active and u.admin
+
     def validate_call(self, request: Request, data: dict[str, Any]) -> None:
          UserBase.model_validate(data)
+
+
+class ProfileView(SQLModelModelView):
+    key = 'profile'
+    menu_label = 'Profile'
+    icon = 'fa fa-address-card'
+
+    fields = ['id', 'handle', 'first_name', 'last_name',
+              ComputedField('full_name', getter=lambda req, obj: obj.full_name()),
+              'email',
+              'organization', 'active', 'admin', 'superuser']
+    exclude_fields_from_list = ['id']
+    column_visibility = False
+    searchable_fields = []
+    sortable_fields = []
+    show_goto_page = False
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(User, *args, **kwargs)
+
+    def can_access_field(self, request: Request, field: BaseField, action: RequestAction | None = None) -> bool:
+        action = action or request.state.action
+        match field.name:
+            case 'first_name' | 'last_name': # Computed field counterparts
+                return action.name in NON_COMPUTED_FIELD_ACTIONS
+            case 'full_name': # Computed fields
+                return action.name in COMPUTED_FIELD_ACTIONS
+        return super().can_access_field(request, field, action=action)
+
+    def can_create(self, request: Request) -> bool:
+        return False
+
+    def can_delete(self, request: Request) -> bool:
+        return False
+
+    def can_export(self, request: Request) -> bool:
+        return False
+
+    def can_import(self, request: Request) -> bool:
+        return False
+
+    def get_filter_registry(self) -> FilterRegistry:
+        return FilterRegistry() # empty registry, disabling the filter selector
+
+    def is_accessible(self, request: Request) -> bool:
+        return request.state.admin_user.user.active
+
+    def get_count_query(self, request: Request) -> Select:
+        return super().get_count_query(request).where(User.id == request.state.admin_user.user.id)
+
+    def get_list_query(self, request: Request) -> Select:
+        return super().get_list_query(request).where(User.id == request.state.admin_user.user.id)
+
+    async def find_by_pk(self, request: Request, pk: Any) -> Any:
+        # FIXME This doesn't feel right but it doesn't work without .hex
+        return await super().find_by_pk(request, request.state.admin_user.user.id.hex)
