@@ -45,7 +45,7 @@ from jwt import PyJWTError, decode as jwt_decode, encode as jwt_encode
 from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlmodel import SQLModel
 from starlette.middleware.sessions import SessionMiddleware
-from starlette.status import HTTP_303_SEE_OTHER, HTTP_401_UNAUTHORIZED, HTTP_503_SERVICE_UNAVAILABLE
+from starlette.status import HTTP_303_SEE_OTHER, HTTP_401_UNAUTHORIZED, HTTP_503_SERVICE_UNAVAILABLE, HTTP_403_FORBIDDEN
 from starlette_admin.contrib.sqlmodel import Admin
 from starlette_admin.views import Link
 
@@ -79,15 +79,18 @@ class MyApp:
         class MyAdmin(Admin):
             async def _find_object_or_404(self, request: Request, view: "BaseModelView", key: str | None, pk: str | None, action: str) -> Any:
                 if isinstance(view, ProfileView) and key == 'profile' and (action == 'detail' or action == 'edit'):
-                    pk = request.state.admin_user.user.id
+                    upk = str(request.state.admin_user.user.id) # FIXME pk:str/pk:UUID inconsistencies
+                    if pk and pk != upk:
+                        raise HTTPException(HTTP_403_FORBIDDEN)
+                    pk = upk
                 return await super()._find_object_or_404(request, view, key, pk, action)
 
         admin = MyAdmin(self.engine, auth_provider=StarletteAdminAuthProvider(self.session_maker), title='Projectoscope Admin', secret_key=os.environ['STARLETTE_ADMIN_SECRET_KEY'])
         admin.add_view(PreservationProjectView())
         admin.add_view(OrganizationView())
         admin.add_view(UserView())
-        admin.add_view(profile_view := ProfileView()) # FIXME Would like to not be visible in the menu
-        admin.add_link(Link(menu_label='My Profile', icon=ProfileView.icon, url=f'{admin.base_url}/{profile_view.key}/detail'))
+        admin.add_view(ProfileView()) # FIXME Would like to not be visible in the menu
+        admin.add_link(Link(menu_label='My Profile', icon=ProfileView.icon, url=f'{admin.base_url}/{ProfileView.key}/detail'))
         admin.mount_to(self.app)
 
     @asynccontextmanager
