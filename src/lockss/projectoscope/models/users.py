@@ -98,3 +98,7 @@ class StarletteAdminUser(AdminUser):
     def __init__(self, user: User) -> None:
         super().__init__(username=user.handle, photo_url=None)
         self.user = user
+
+
+def user_(request: Request) -> User:
+    return request.state.admin_user.user

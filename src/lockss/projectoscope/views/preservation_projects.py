@@ -33,6 +33,7 @@ from starlette_admin.fields import HasMany
 
 from . import SQLModelModelView
 from ..models.preservation_projects import PreservationProject
+from ..models.users import user_
 
 class PreservationProjectView(SQLModelModelView):
     icon = 'fa fa-briefcase'
@@ -45,7 +46,7 @@ class PreservationProjectView(SQLModelModelView):
         super().__init__(PreservationProject, *args, **kwargs)
 
     def is_accessible(self, request: Request) -> bool:
-        return request.state.admin_user.user.admin
+        return (u := user_(request)).active and u.admin
 
     def can_delete(self, request: Request) -> bool:
         return False

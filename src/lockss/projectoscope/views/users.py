@@ -33,6 +33,7 @@ from typing import Any, cast
 from boltons.iterutils import partition
 from boltons.strutils import unit_len
 from sqlalchemy import Select
+from sqlmodel import and_
 from starlette.requests import Request
 from starlette_admin import ActionSelection, BaseField, ComputedField, PasswordField, RequestAction, action, flash
 from starlette_admin.contrib.sqlmodel import ModelView
@@ -40,7 +41,7 @@ from starlette_admin.exceptions import FormValidationError
 from starlette_admin.filters import FilterRegistry
 
 from . import SQLModelModelView, COMPUTED_FIELD_ACTIONS, NON_COMPUTED_FIELD_ACTIONS
-from ..models.users import User, UserBase, BCRYPT_HASH_LENGTH
+from ..models.users import User, UserBase, user_, BCRYPT_HASH_LENGTH
 
 
 class UserView(SQLModelModelView):
@@ -119,7 +120,7 @@ class UserView(SQLModelModelView):
         return
 
     def is_accessible(self, request: Request) -> bool:
-        return (u := request.state.admin_user.user).active and u.admin
+        return (u := user_(request)).active and u.admin
 
     def validate_call(self, request: Request, data: dict[str, Any]) -> None:
          UserBase.model_validate(data)
@@ -145,27 +146,6 @@ class ProfileView(ModelView):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(User, *args, **kwargs)
 
-    async def before_edit(self, request: Request, data: dict[str, Any], obj: Any) -> None:
-        print(f'@@@@@@@@ BEFORE_EDIT {data=}') ### FIXME
-        user_obj: User = cast(User, obj)
-        plaintext1: str = cast(str, data.get('plaintext_password'))
-        plaintext2: str = cast(str, data.get('plaintext_password_2'))
-        if plaintext1 and not plaintext2:
-            flash(request, 'The form contains errors: plaintext_password_2', 'error')
-            raise FormValidationError({'plaintext_password_2': 'Please confirm password change'})
-        if plaintext2 and not plaintext1:
-            flash(request, 'The form contains errors: plaintext_password', 'error')
-            raise FormValidationError({'plaintext_password': 'Please confirm password change'})
-        if plaintext1 and plaintext2:
-            if plaintext1 != plaintext2:
-                flash(request, 'The form contains errors: plaintext_password_2', 'error')
-                raise FormValidationError({'plaintext_password_2': 'Changed passwords do not match'})
-            data['hashed_password'] = User.hash_password(plaintext1)
-        else:
-            data['hashed_password'] = user_obj.hashed_password
-        data.pop('plaintext_password', None)
-        data.pop('plaintext_password_2', None)
-
     def can_access_field(self, request: Request, field: BaseField, action: RequestAction | None = None) -> bool:
         action = action or request.state.action
         match field.name:
@@ -186,7 +166,7 @@ class ProfileView(ModelView):
         return False
 
     def can_edit(self, request: Request) -> bool:
-        return (pk := request.query_params.get('pk')) is None or pk == str(request.state.admin_user.user.id) # FIXME pk:str/pk:UUID inconsistencies
+        return (pk := request.query_params.get('pk')) is None or pk == str(user_(request).id) # FIXME pk:str/pk:UUID inconsistencies
 
     def can_export(self, request: Request) -> bool:
         return False
@@ -195,75 +175,59 @@ class ProfileView(ModelView):
         return False
 
     def can_view_detail(self, request: Request) -> bool:
-        return (pk := request.query_params.get('pk')) is None or pk == str(request.state.admin_user.user.id) # FIXME pk:str/pk:UUID inconsistencies
+        return (pk := request.query_params.get('pk')) is None or pk == str(user_(request).id) # FIXME pk:str/pk:UUID inconsistencies
 
     def get_filter_registry(self) -> FilterRegistry:
         return FilterRegistry() # empty registry, disabling the filter selector
 
     def is_accessible(self, request: Request) -> bool:
-        return request.state.admin_user.user.active
+        return user_(request).active
 
     def get_count_query(self, request: Request) -> Select:
-        return super().get_count_query(request).where(User.id == request.state.admin_user.user.id)
+        return super().get_count_query(request).where(and_(User.id == user_(request).id))
 
     def get_list_query(self, request: Request) -> Select:
-        return super().get_list_query(request).where(User.id == request.state.admin_user.user.id)
+        return super().get_list_query(request).where(and_(User.id == user_(request).id))
 
     async def find_by_pk(self, request: Request, pk: Any) -> Any:
-        return await super().find_by_pk(request, request.state.admin_user.user.id.hex) # FIXME pk:str/pk:UUID inconsistencies
+        return await super().find_by_pk(request, user_(request).id.hex) # FIXME pk:str/pk:UUID inconsistencies
 
     async def validate(self, request: Request, data: dict[str, Any]) -> None:
-        data_copy = data.copy()
-        data_copy.setdefault('hashed_password', '0' * BCRYPT_HASH_LENGTH)
-        await super().validate(request, data_copy)
+        # This is called from CREATE and EDIT. CREATE is disabled here right now.
+        # This is where the password-checking logic must live, not in
+        # before_edit as was previously believed, as the latter is called only
+        # at the end as part of an event-emitting hook.
+        user: User = user_(request)
+        plaintext1: str = cast(str, data.get('plaintext_password'))
+        plaintext2: str = cast(str, data.get('plaintext_password_2'))
+        if plaintext1 and not plaintext2:
+            flash(request, 'The form contains errors: plaintext_password, plaintext_password_2', 'error')
+            raise FormValidationError({'plaintext_password_2': 'Please confirm password change'})
+        if plaintext2 and not plaintext1:
+            flash(request, 'The form contains errors: plaintext_password', 'error')
+            raise FormValidationError({'plaintext_password': 'Please confirm password change'})
+        if plaintext1 and plaintext2:
+            if plaintext1 != plaintext2:
+                flash(request, 'The form contains errors: plaintext_password_2', 'error')
+                raise FormValidationError({'plaintext_password_2': 'Changed passwords do not match'})
+            data['hashed_password'] = User.hash_password(plaintext1)
+        else:
+            data['hashed_password'] = user.hashed_password
+        data.pop('plaintext_password', None)
+        data.pop('plaintext_password_2', None)
+        # Actual validation
+        await super().validate(request, data)
 
-    async def _populate_obj(
-        self,
-        request: Request,
-        obj: Any,
-        data: dict[str, Any],
-        is_edit: bool = False,
-    ) -> Any:
+    async def _populate_obj(self, request: Request, obj: Any, data: dict[str, Any], is_edit: bool = False) -> Any:
         try:
-            request.state.populate_obj = True
+            request.state.populate_obj_special_case = True
             await super()._populate_obj(request, obj, data, is_edit=is_edit)
-        except Exception as exc:
-            print(f'@@@@@@@@ _POPULATE_OBJ {exc=}') ### FIXME
-            # import traceback
-            # import sys
-            # for line in traceback.format_exception(exc):
-            #     print(line)
-            raise
         finally:
-            request.state.populate_obj = False
+            request.state.populate_obj_special_case = False
 
-    async def _arrange_data(
-        self,
-        request: Request,
-        data: dict[str, Any],
-        is_edit: bool = False,
-    ) -> dict[str, Any]:
-        try:
-            request.state.arrange_data = True
-            print(f'@@@@@@@@ _ARRANGE_DATA {data=}') ### FIXME
-            ret = await super()._arrange_data(request, data, is_edit=is_edit)
-            #print(f'@@@@@@@@ _ARRANGE_DATA {ret=}') ### FIXME
-            return ret
-        finally:
-            request.state.arrange_data = False
-
-    def get_fields_list(
-        self,
-        request: Request,
-        *,
-        include_nested: bool = False,
-        action: RequestAction | None = None,
-    ) -> Sequence[BaseField]:
+    def get_fields_list(self, request: Request, *, include_nested: bool = False, action: RequestAction | None = None) -> Sequence[BaseField]:
         res = [f for f in super().get_fields_list(request, include_nested=include_nested, action=action)]
-        if request.method == 'POST' and (action == RequestAction.EDIT or request.state.action == RequestAction.EDIT):
-            if getattr(request.state, 'populate_obj', False):
-                res = [f for f in res if f.name not in ('plaintext_password', 'plaintext_password_2')]
-            elif getattr(request.state, 'arrange_data', False):
-                res.append(PasswordField('hashed_password'))
-        # print(f'@@@@@@@@ GET_FIELDS_LIST {request.method=} {action=} {request.state.action=} {res=}')  ### FIXME
+        if request.method == 'POST' and (action == RequestAction.EDIT or request.state.action == RequestAction.EDIT) and getattr(request.state, 'populate_obj_special_case', False):
+            res = [f for f in res if f.name not in ('plaintext_password', 'plaintext_password_2')]
+            res.append(PasswordField('hashed_password'))
         return res

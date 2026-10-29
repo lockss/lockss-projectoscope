@@ -53,7 +53,7 @@ from .auth import StarletteAdminAuthProvider
 from .db import AsyncSessionMaker, make_sqlalchemy_async_engine, make_sqlalchemy_async_session_maker
 from .views.organizations import OrganizationView
 from .views.preservation_projects import PreservationProjectView
-from .views.users import UserView, ProfileView
+from .views.users import UserView, ProfileView, user_
 
 
 load_dotenv()
@@ -79,7 +79,7 @@ class MyApp:
         class MyAdmin(Admin):
             async def _find_object_or_404(self, request: Request, view: "BaseModelView", key: str | None, pk: str | None, action: str) -> Any:
                 if isinstance(view, ProfileView) and key == 'profile' and (action == 'detail' or action == 'edit'):
-                    upk = str(request.state.admin_user.user.id) # FIXME pk:str/pk:UUID inconsistencies
+                    upk = str(user_(request).id) # FIXME pk:str/pk:UUID inconsistencies
                     if pk and pk != upk:
                         raise HTTPException(HTTP_403_FORBIDDEN)
                     pk = upk
