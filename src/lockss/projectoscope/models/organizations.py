@@ -35,7 +35,7 @@ from sqlmodel import Field, Relationship
 from starlette.requests import Request
 
 from . import Handle, StrictSQLModel
-from .preservation_projects import PreservationProject
+from .initiatives import Initiative
 
 if TYPE_CHECKING:
     from .users import User
@@ -51,8 +51,8 @@ class Organization(OrganizationBase, table=True):
     __tablename__ = 'organizations'
     id: UUID | None = Field(default_factory=uuid4, primary_key=True, index=True, title='UUID')
 
-    preservation_project_id: UUID | None = Field(default=None, foreign_key='preservation_projects.id')
-    preservation_project: PreservationProject | None = Relationship(back_populates='organizations')
+    initiative_id: UUID | None = Field(default=None, foreign_key='initiatives.id')
+    initiative: Initiative | None = Relationship(back_populates='organizations')
 
     users: list['User'] = Relationship(back_populates='organization')
 

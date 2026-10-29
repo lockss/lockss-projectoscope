@@ -28,28 +28,28 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from typing import TYPE_CHECKING
+from uuid import UUID, uuid4
+
+from sqlmodel import Field, Relationship
 from starlette.requests import Request
-from starlette_admin.fields import HasMany
 
-from . import SQLModelModelView
-from ..models.preservation_projects import PreservationProject
-from ..models.users import user_
+from . import Handle, StrictSQLModel
 
-class PreservationProjectView(SQLModelModelView):
-    icon = 'fa fa-briefcase'
-    fields = ['id', 'handle', 'name', 'short_name', HasMany('organizations', key='organization')]
-    exclude_fields_from_list = ['id', 'organizations']
-    fields_default_sort = ['name']
-    searchable_fields = ['id', 'handle', 'name', 'short_name']
+if TYPE_CHECKING:
+    from .organizations import Organization
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(PreservationProject, *args, **kwargs)
 
-    def is_accessible(self, request: Request) -> bool:
-        return (u := user_(request)).active and u.admin
+class InitiativeBase(StrictSQLModel):
+    handle: Handle = Field(nullable=False, unique=True, index=True, title='Initiative Handle')
+    name: str = Field(nullable=False, min_length=1, max_length=60, title='Name')
+    short_name: str = Field(unique=True, max_length=20, title='Short Name')
 
-    def can_delete(self, request: Request) -> bool:
-        return False
+class Initiative(InitiativeBase, table=True):
+    __tablename__ = 'initiatives'
+    id: UUID | None = Field(default_factory=uuid4, primary_key=True, index=True, title='UUID')
 
-    def can_import(self, request: Request) -> bool:
-        return False
+    organizations: list['Organization'] = Relationship(back_populates='initiative')
+
+    def __admin_repr__(self, request: Request) -> str:
+        return f'{self.name}{f" ({sn})" if (sn := self.short_name) else ""}'

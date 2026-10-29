@@ -51,8 +51,8 @@ from starlette_admin.views import Link
 
 from .auth import StarletteAdminAuthProvider
 from .db import AsyncSessionMaker, make_sqlalchemy_async_engine, make_sqlalchemy_async_session_maker
+from .views.initiatives import InitiativeView
 from .views.organizations import OrganizationView
-from .views.preservation_projects import PreservationProjectView
 from .views.users import UserView, ProfileView, user_
 
 
@@ -86,7 +86,7 @@ class MyApp:
                 return await super()._find_object_or_404(request, view, key, pk, action)
 
         admin = MyAdmin(self.engine, auth_provider=StarletteAdminAuthProvider(self.session_maker), title='Projectoscope Admin', secret_key=os.environ['STARLETTE_ADMIN_SECRET_KEY'])
-        admin.add_view(PreservationProjectView())
+        admin.add_view(InitiativeView())
         admin.add_view(OrganizationView())
         admin.add_view(UserView())
         admin.add_view(ProfileView()) # FIXME Would like to not be visible in the menu
