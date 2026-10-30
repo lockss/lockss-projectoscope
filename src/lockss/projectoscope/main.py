@@ -68,7 +68,6 @@ class MyApp:
 
     def __init__(self):
         self.engine = make_async_engine(echo=True)
-        self.engine.begin
         self.session_maker = make_async_session_maker(self.engine)
         self.app = FastAPI(lifespan=self.lifespan)
         self.app.mount('/static/css', StaticFiles(directory='src/lockss/projectoscope/static/css'), name='css')
