@@ -39,7 +39,7 @@ from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from . import __copyright__, __license__, __version__
-from .db import AsyncSessionMaker, make_sqlalchemy_async_engine, make_sqlalchemy_async_session_maker
+from .orm.sqlmodel import AsyncSessionMaker, make_async_engine, make_async_session_maker
 from .models.users import User, UserBase
 
 
@@ -87,9 +87,9 @@ def create_user(ctx: Context, **kwargs) -> None:
             user: User = User.model_validate(user_dict)
         except ValidationError as ve:
             ctx.fail(str(ve))
-        engine: AsyncEngine = make_sqlalchemy_async_engine()
+        engine: AsyncEngine = make_async_engine()
         try:
-            session_maker: AsyncSessionMaker = make_sqlalchemy_async_session_maker(engine)
+            session_maker: AsyncSessionMaker = make_async_session_maker(engine)
             async with session_maker() as session:
                 session.add(user)
                 await session.commit()
