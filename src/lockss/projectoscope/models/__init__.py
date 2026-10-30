@@ -49,6 +49,12 @@ HANDLE_RE: Final[Pattern] = compile(r'^[-_a-z0-9]{1,' + str(HANDLE_MAX_LENGTH) +
 Handle: TypeAlias = Annotated[str, StringConstraints(pattern=HANDLE_RE)]
 
 
+SHORT_NAME_LENGTH: Final[int] = 20
+
+
+ShortName: TypeAlias = Annotated[str, StringConstraints(max_length=SHORT_NAME_LENGTH)]
+
+
 ErrorTuple: TypeAlias = tuple[LiteralString, LiteralString, LiteralString, dict[str, Any] | None]
 
 

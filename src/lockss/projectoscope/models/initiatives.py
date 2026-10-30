@@ -28,22 +28,26 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from typing import TYPE_CHECKING
+from typing import ClassVar, TYPE_CHECKING
 from uuid import UUID, uuid4
 
 from sqlmodel import Field, Relationship
 from starlette.requests import Request
 
-from . import Handle, StrictSQLModel
+from . import Handle, ShortName, StrictSQLModel
 
 if TYPE_CHECKING:
     from .organizations import Organization
 
 
 class InitiativeBase(StrictSQLModel):
-    handle: Handle = Field(nullable=False, unique=True, index=True, title='Initiative Handle')
-    name: str = Field(nullable=False, min_length=1, max_length=60, title='Name')
-    short_name: str = Field(unique=True, max_length=20, title='Short Name')
+
+    NAME_LENGTH: ClassVar[int] = 60
+
+    handle: Handle = Field(unique=True, index=True, title='Initiative Handle')
+    name: str = Field(min_length=1, max_length=NAME_LENGTH, title='Name')
+    short_name: ShortName | None = Field(unique=True, title='Short Name')
+
 
 class Initiative(InitiativeBase, table=True):
     __tablename__ = 'initiatives'
