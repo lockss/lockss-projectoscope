@@ -50,7 +50,7 @@ from starlette_admin.contrib.sqlmodel import Admin
 from starlette_admin.views import Link
 
 from .auth import StarletteAdminAuthProvider
-from .db import AsyncSessionMaker, make_sqlalchemy_async_engine, make_sqlalchemy_async_session_maker
+from .orm.sqlmodel import AsyncSessionMaker, make_async_engine, make_async_session_maker
 from .views.initiatives import InitiativeView
 from .views.organizations import OrganizationView
 from .views.users import UserView, ProfileView, user_
@@ -67,8 +67,9 @@ class MyApp:
     templates: Jinja2Templates
 
     def __init__(self):
-        self.engine = make_sqlalchemy_async_engine(echo=True)
-        self.session_maker = make_sqlalchemy_async_session_maker(self.engine)
+        self.engine = make_async_engine(echo=True)
+        self.engine.begin
+        self.session_maker = make_async_session_maker(self.engine)
         self.app = FastAPI(lifespan=self.lifespan)
         self.app.mount('/static/css', StaticFiles(directory='src/lockss/projectoscope/static/css'), name='css')
         self.app.mount('/static/images', StaticFiles(directory='src/lockss/projectoscope/static/images'), name='images')

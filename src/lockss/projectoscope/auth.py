@@ -35,7 +35,7 @@ from sqlmodel import and_, or_, select
 from starlette.requests import Request
 from starlette_admin.auth import AdminUser, AuthProvider, LoginFailed
 
-from .db import AsyncSessionMaker
+from .orm.sqlmodel import AsyncSessionMaker
 from .models.users import StarletteAdminUser, User
 
 
