@@ -28,11 +28,21 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .sqla import AsyncSessionMaker, make_async_engine, make_async_session_maker
+import os
+from typing import TypeAlias
 
-# Just re-exporting those names, since there isn't really anything SQLModel-specific
-__all__ = (
-    AsyncSessionMaker,
-    make_async_engine,
-    make_async_session_maker,
-)
+from sqlalchemy import URL
+from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker, create_async_engine
+
+
+AsyncSessionMaker: TypeAlias = async_sessionmaker
+
+
+def make_async_engine(database_url: str | URL | None = None,
+                      echo: bool = False) -> AsyncEngine:
+    return create_async_engine(database_url or os.environ['DATABASE_URL'], echo=echo)
+
+
+def make_async_session_maker(engine: AsyncEngine,
+                             expire_on_commit: bool = False) -> AsyncSessionMaker:
+    return AsyncSessionMaker(engine, expire_on_commit=expire_on_commit)

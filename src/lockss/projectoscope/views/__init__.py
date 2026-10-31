@@ -32,9 +32,8 @@ from typing import Any
 
 from pydantic import ValidationError
 from starlette.requests import Request
-from starlette_admin import RequestAction, flash
+from starlette_admin import BaseField, RequestAction, flash
 from starlette_admin.contrib.sqlmodel import ModelView
-from starlette_admin.exceptions import FormValidationError
 
 
 NON_COMPUTED_FIELD_ACTIONS: frozenset[RequestAction] = frozenset({
@@ -51,19 +50,37 @@ COMPUTED_FIELD_ACTIONS: frozenset[str] = frozenset({
 })
 
 
-class SQLModelModelView(ModelView):
+class PJSModelView(ModelView):
+    """
+    A custom SQLModel-based ModelView for Projectoscope.
+
+    *  In ``validate``, in case of Pydantic ``ValidationError``, adds a flash
+       message. By default, invokes the parent ``validate``, but this can be
+       customized by overriding ``validate_call``.
+
+    *  Sets ``show_goto_page`` to True.
+
+    *  Sets ``row_click_navigate`` to False.
+    """
+
     show_goto_page = True
     row_click_navigate = False
 
     async def validate(self, request: Request, data: dict[str, Any]) -> None:
         try:
-            self.validate_call(request, data)
+            await self.validate_call(request, data)
         except ValidationError as ve:
-            flash(request, f'The form contains errors: {", ".join(error["loc"][0] for error in ve.errors())}', 'error')
-            raise FormValidationError({error['loc'][0]: error['msg'] for error in ve.errors()})
+            flash(request, f'The form contains errors: {", ".join(error["loc"][0] for error in ve.errors() if error.get("loc", []))}', 'error')
+            raise
 
-    def validate_call(self, request: Request, data: dict[str, Any]) -> None:
-        self.validate_original(request, data)
+    async def validate_call(self, request: Request, data: dict[str, Any]) -> None:
+        await self.validate_original(request, data)
 
-    def validate_original(self, request: Request, data: dict[str, Any]) -> None:
-        super().validate(request, data)
+    async def validate_original(self, request: Request, data: dict[str, Any]) -> None:
+        await super().validate(request, data)
+
+
+def gray(field: BaseField) -> BaseField:
+    field.read_only = True
+    field.disabled = True
+    return field

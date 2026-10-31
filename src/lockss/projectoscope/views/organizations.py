@@ -31,11 +31,12 @@
 from starlette.requests import Request
 from starlette_admin.fields import HasMany
 
-from . import SQLModelModelView
+from . import PJSModelView
 from ..models.organizations import Organization
 from ..models.users import user_
 
-class OrganizationView(SQLModelModelView):
+class OrganizationView(PJSModelView):
+
     icon = 'fa fa-people-roof'
     fields = ['id', 'handle', 'name', 'short_name', 'initiative', HasMany('users', key='user')]
     exclude_fields_from_list = ['id', 'users']

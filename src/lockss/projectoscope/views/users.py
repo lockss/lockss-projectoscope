@@ -35,16 +35,17 @@ from boltons.strutils import unit_len
 from sqlalchemy import Select
 from sqlmodel import and_
 from starlette.requests import Request
-from starlette_admin import ActionSelection, BaseField, ComputedField, PasswordField, RequestAction, action, flash
+from starlette_admin import ActionSelection, BaseField, BooleanField, ComputedField, PasswordField, RequestAction, StringField, action, flash
 from starlette_admin.contrib.sqlmodel import ModelView
 from starlette_admin.exceptions import FormValidationError
 from starlette_admin.filters import FilterRegistry
 
-from . import SQLModelModelView, COMPUTED_FIELD_ACTIONS, NON_COMPUTED_FIELD_ACTIONS
-from ..models.users import User, UserBase, user_, BCRYPT_HASH_LENGTH
+from . import PJSModelView, gray, COMPUTED_FIELD_ACTIONS, NON_COMPUTED_FIELD_ACTIONS
+from ..models.users import User, user_, BCRYPT_HASH_LENGTH
 
 
-class UserView(SQLModelModelView):
+class UserView(PJSModelView):
+
     icon = 'fa fa-circle-user'
     fields = ['id', 'handle', 'first_name', 'last_name',
               ComputedField('full_name', getter=lambda req, obj: obj.full_name()),
@@ -123,22 +124,23 @@ class UserView(SQLModelModelView):
         return (u := user_(request)).active and u.admin
 
     def validate_call(self, request: Request, data: dict[str, Any]) -> None:
-         UserBase.model_validate(data)
+        data_copy = data.copy()
+        data_copy['hashed_password'] = '0' * BCRYPT_HASH_LENGTH
+        User.model_validate(data_copy)
 
 
-class ProfileView(ModelView):
+class ProfileView(ModelView): # Note: not StrictSQLModel
     key = 'profile'
     menu_label = 'Profile'
     icon = 'fa fa-address-card'
-    show_goto_page = False
     row_click_navigate = True
 
-    fields = ['id', 'handle', 'first_name', 'last_name',
+    fields = ['id', gray(StringField('handle')), 'first_name', 'last_name',
               ComputedField('full_name', getter=lambda req, obj: obj.full_name()),
               'email',
               PasswordField('plaintext_password', label='Change password'),
               PasswordField('plaintext_password_2', label='Change password (confirm)'),
-              'organization', 'active', 'admin', 'superuser']
+              'organization', gray(BooleanField('active')), gray(BooleanField('admin')), gray(BooleanField('superuser'))]
     exclude_fields_from_list = ['id']
     column_visibility = False
     searchable_fields = []
@@ -218,7 +220,10 @@ class ProfileView(ModelView):
         data.pop('plaintext_password', None)
         data.pop('plaintext_password_2', None)
         # Actual validation
-        await super().validate(request, data)
+        print(f'@@@@@@@@ {data=}') ### FIXME
+        new_data = user_(request).model_copy(update=data).model_dump()
+        print(f'@@@@@@@@ {new_data=}') ### FIXME
+        await super().validate(request, new_data)
 
     async def _populate_obj(self, request: Request, obj: Any, data: dict[str, Any], is_edit: bool = False) -> Any:
         try:

@@ -33,11 +33,6 @@ from typing import Annotated, Any, Final, LiteralString, TypeAlias
 
 from pydantic import ConfigDict, StringConstraints, ValidationError
 from pydantic_core import InitErrorDetails, PydanticCustomError
-from sqlmodel import SQLModel
-
-
-class StrictSQLModel(SQLModel):
-    model_config = ConfigDict(validate_assignment=True)
 
 
 HANDLE_MAX_LENGTH: Final[int] = 20

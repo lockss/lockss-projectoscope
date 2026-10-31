@@ -47,7 +47,7 @@ from sqlmodel import SQLModel
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.status import HTTP_303_SEE_OTHER, HTTP_401_UNAUTHORIZED, HTTP_503_SERVICE_UNAVAILABLE, HTTP_403_FORBIDDEN
 from starlette_admin.contrib.sqlmodel import Admin
-from starlette_admin.views import Link
+from starlette_admin.views import BaseModelView, Link
 
 from .auth import StarletteAdminAuthProvider
 from .orm.sqlmodel import AsyncSessionMaker, make_async_engine, make_async_session_maker

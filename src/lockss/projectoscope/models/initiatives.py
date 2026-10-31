@@ -31,27 +31,25 @@
 from typing import ClassVar, TYPE_CHECKING
 from uuid import UUID, uuid4
 
-from sqlmodel import Field, Relationship
+from sqlmodel import Field, Relationship, SQLModel
 from starlette.requests import Request
 
-from . import Handle, ShortName, StrictSQLModel
+from . import Handle, ShortName
 
 if TYPE_CHECKING:
     from .organizations import Organization
 
 
-class InitiativeBase(StrictSQLModel):
+class Initiative(SQLModel, table=True):
 
     NAME_LENGTH: ClassVar[int] = 60
 
+    __tablename__ = 'initiatives'
+
+    id: UUID | None = Field(default_factory=uuid4, primary_key=True, index=True, title='UUID')
     handle: Handle = Field(unique=True, index=True, title='Initiative Handle')
     name: str = Field(min_length=1, max_length=NAME_LENGTH, title='Name')
     short_name: ShortName | None = Field(unique=True, title='Short Name')
-
-
-class Initiative(InitiativeBase, table=True):
-    __tablename__ = 'initiatives'
-    id: UUID | None = Field(default_factory=uuid4, primary_key=True, index=True, title='UUID')
 
     organizations: list['Organization'] = Relationship(back_populates='initiative')
 

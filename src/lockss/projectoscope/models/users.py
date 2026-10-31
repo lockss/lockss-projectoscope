@@ -29,15 +29,15 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import bcrypt
-from typing import Final, Self
+from typing import ClassVar, Final, Self
 from uuid import UUID, uuid4
 
 from pydantic import EmailStr, ModelWrapValidatorHandler, model_validator
-from sqlmodel import Field, Relationship
+from sqlmodel import Field, Relationship, SQLModel
 from starlette.requests import Request
 from starlette_admin.auth import AdminUser
 
-from . import Handle, StrictSQLModel, make_field_error
+from . import Handle, make_field_error
 from .organizations import Organization
 
 
@@ -47,38 +47,34 @@ BCRYPT_HASH_LENGTH: Final[int] = 60
 BCRYPT_MAX_BYTES: Final[int] = 72
 
 
-class UserBase(StrictSQLModel):
-    handle: Handle = Field(nullable=False, unique=True, index=True, title='User Handle')
-    first_name: str = Field(nullable=False, min_length=1, max_length=60, title='First Name')
-    last_name: str = Field(nullable=False, min_length=1, max_length=60, title='Last Name')
-    email: EmailStr = Field(nullable=False, unique=True, index=True, max_length=60, title='E-mail')
+class User(SQLModel, table=True):
+
+    NAME_LENGTH: ClassVar[int] = 60
+    FIRST_NAME_LENGTH: ClassVar[int] = NAME_LENGTH
+    LAST_NAME_LENGTH: ClassVar[int] = NAME_LENGTH
+    EMAIL_LENGTH: ClassVar[int] = 60
+
+    __tablename__ = 'users'
+
+    id: UUID | None = Field(default_factory=uuid4, primary_key=True, index=True, title='UUID')
+    hashed_password: str = Field(nullable=False, min_length=BCRYPT_HASH_LENGTH, max_length=BCRYPT_HASH_LENGTH, repr=False)
+    handle: Handle = Field(unique=True, index=True, title='User Handle')
+    first_name: str = Field(min_length=1, max_length=FIRST_NAME_LENGTH, title='First Name')
+    last_name: str = Field(min_length=1, max_length=LAST_NAME_LENGTH, title='Last Name')
+    email: EmailStr = Field(unique=True, index=True, max_length=EMAIL_LENGTH, title='E-mail')
     active: bool = Field(default=True, title='Active')
     admin: bool = Field(default=False, title='Administrator')
     superuser: bool = Field(default=False, title='Superuser')
-
-    # Not a computed_field, just a convenience method
-    def full_name(self) -> str:
-        return f'{self.first_name} {self.last_name}'
-
-    @model_validator(mode='wrap')
-    @classmethod
-    def _check_admin(cls, data: Self, handler: ModelWrapValidatorHandler[Self]) -> Self:
-        mi: Self = handler(data)
-        if mi.superuser and not mi.admin:
-            raise make_field_error(cls, mi, ('admin', 'value_error', 'A user who is a superuser must also be an admin', None))
-        return mi
-
-
-class User(UserBase, table=True):
-    __tablename__ = 'users'
-    id: UUID | None = Field(default_factory=uuid4, primary_key=True, index=True, title='UUID')
-    hashed_password: str = Field(nullable=False, min_length=BCRYPT_HASH_LENGTH, max_length=BCRYPT_HASH_LENGTH, repr=False)
 
     organization_id: UUID | None = Field(default=None, foreign_key='organizations.id')
     organization: Organization | None = Relationship(back_populates='users')
 
     def check_password(self, plaintext_password: str) -> bool:
         return bcrypt.checkpw(plaintext_password.encode()[:BCRYPT_MAX_BYTES], self.hashed_password.encode()[:BCRYPT_MAX_BYTES])
+
+    # Not a computed_field, just a convenience method
+    def full_name(self) -> str:
+        return f'{self.first_name} {self.last_name}'
 
     def set_password(self, plaintext_password: str) -> None:
         self.hashed_password = User.hash_password(plaintext_password)
@@ -89,6 +85,14 @@ class User(UserBase, table=True):
     @staticmethod
     def hash_password(plaintext_password: str) -> str:
         return bcrypt.hashpw(plaintext_password.encode()[:BCRYPT_MAX_BYTES], bcrypt.gensalt()).decode()
+
+    @model_validator(mode='wrap')
+    @classmethod
+    def _check_admin(cls, data: Self, handler: ModelWrapValidatorHandler[Self]) -> Self:
+        mi: Self = handler(data)
+        if mi.superuser and not mi.admin:
+            raise make_field_error(cls, mi, ('admin', 'value_error', 'A user who is a superuser must also be an admin', None))
+        return mi
 
 
 class StarletteAdminUser(AdminUser):
