@@ -123,7 +123,7 @@ class UserView(PJSModelView):
     def is_accessible(self, request: Request) -> bool:
         return (u := user_(request)).active and u.admin
 
-    def validate_call(self, request: Request, data: dict[str, Any]) -> None:
+    async def validate_call(self, request: Request, data: dict[str, Any]) -> None:
         data_copy = data.copy()
         data_copy['hashed_password'] = '0' * BCRYPT_HASH_LENGTH
         User.model_validate(data_copy)
@@ -220,9 +220,7 @@ class ProfileView(ModelView): # Note: not StrictSQLModel
         data.pop('plaintext_password', None)
         data.pop('plaintext_password_2', None)
         # Actual validation
-        print(f'@@@@@@@@ {data=}') ### FIXME
         new_data = user_(request).model_copy(update=data).model_dump()
-        print(f'@@@@@@@@ {new_data=}') ### FIXME
         await super().validate(request, new_data)
 
     async def _populate_obj(self, request: Request, obj: Any, data: dict[str, Any], is_edit: bool = False) -> Any:
