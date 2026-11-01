@@ -85,7 +85,11 @@ class MyApp:
                     pk = upk
                 return await super()._find_object_or_404(request, view, key, pk, action)
 
-        admin = MyAdmin(self.engine, auth_provider=StarletteAdminAuthProvider(self.session_maker), title='Projectoscope Admin', secret_key=os.environ['STARLETTE_ADMIN_SECRET_KEY'])
+        admin = MyAdmin(self.engine,
+                        auth_provider=StarletteAdminAuthProvider(self.session_maker),
+                        title='Projectoscope Admin',
+                        secret_key=os.environ['STARLETTE_ADMIN_SECRET_KEY'],
+                        templates_dir='templates/sa')
         admin.add_view(InitiativeView())
         admin.add_view(OrganizationView())
         admin.add_view(UserView())
