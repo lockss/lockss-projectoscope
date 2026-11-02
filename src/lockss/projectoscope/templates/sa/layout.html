@@ -1,2 +1,8 @@
 {% extends "@starlette-admin/layout.html" %}
-{# This template intentionally left blank #}
+
+{% block user_menu_items %}
+<a href="{{ request.url_for('admin:detail', key='profile') }}" class="dropdown-item"><i class="fa-solid fa-user"></i>View My Profile</a>
+<a href="{{ request.url_for('admin:edit', key='profile') }}" class="dropdown-item"><i class="fa-solid fa-user-gear"></i>Edit My Profile</a>
+<div class="dropdown-divider"></div>
+{{ super() }}
+{% endblock user_menu_items %}

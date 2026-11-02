@@ -46,7 +46,7 @@ from ..models.users import User, user_, BCRYPT_HASH_LENGTH
 
 class UserView(PJSModelView):
 
-    icon = 'fa fa-circle-user'
+    icon = 'fa-solid fa-circle-user'
     fields = ['id', 'handle', 'first_name', 'last_name',
               ComputedField('full_name', getter=lambda req, obj: obj.full_name()),
               'email',
@@ -129,10 +129,15 @@ class UserView(PJSModelView):
         User.model_validate(data_copy)
 
 
-class ProfileView(ModelView): # Note: not StrictSQLModel
+class ProfileView(PJSModelView): # Note: not StrictSQLModel
     key = 'profile'
     menu_label = 'Profile'
-    icon = 'fa fa-address-card'
+    icon = 'fa-solid fa-user'
+
+    hide_from_sidebar = True
+
+    # Undo PJSModelView
+    show_goto_page = False
     row_click_navigate = True
 
     fields = ['id', gray(StringField('handle')), 'first_name', 'last_name',
@@ -145,7 +150,6 @@ class ProfileView(ModelView): # Note: not StrictSQLModel
     column_visibility = False
     searchable_fields = []
     sortable_fields = []
-    show_goto_page = False
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(User, *args, **kwargs)
@@ -184,9 +188,6 @@ class ProfileView(ModelView): # Note: not StrictSQLModel
     def get_filter_registry(self) -> FilterRegistry:
         return FilterRegistry() # empty registry, disabling the filter selector
 
-    def is_accessible(self, request: Request) -> bool:
-        return user_(request).active
-
     def get_count_query(self, request: Request) -> Select:
         return super().get_count_query(request).where(and_(User.id == user_(request).id))
 
@@ -195,6 +196,9 @@ class ProfileView(ModelView): # Note: not StrictSQLModel
 
     async def find_by_pk(self, request: Request, pk: Any) -> Any:
         return await super().find_by_pk(request, user_(request).id.hex) # FIXME pk:str/pk:UUID inconsistencies
+
+    def is_accessible(self, request: Request) -> bool:
+        return user_(request).active
 
     async def validate(self, request: Request, data: dict[str, Any]) -> None:
         # This is called from CREATE and EDIT. CREATE is disabled here right now.

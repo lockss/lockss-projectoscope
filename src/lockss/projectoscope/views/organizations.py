@@ -37,7 +37,7 @@ from ..models.users import user_
 
 class OrganizationView(PJSModelView):
 
-    icon = 'fa fa-people-roof'
+    icon = 'fa-solid fa-people-roof'
     fields = ['id', 'handle', 'name', 'short_name', 'initiative', HasMany('users', key='user')]
     exclude_fields_from_list = ['id', 'users']
     fields_default_sort = ['name']

@@ -38,7 +38,7 @@ from ..models.users import user_
 
 class InitiativeView(PJSModelView):
 
-    icon = 'fa fa-briefcase'
+    icon = 'fa-solid fa-briefcase'
     fields = ['id', 'handle', 'name', 'short_name', HasMany('organizations', key='organization')]
     exclude_fields_from_list = ['id', 'organizations']
     fields_default_sort = ['name']

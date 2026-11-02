@@ -89,12 +89,11 @@ class MyApp:
                         auth_provider=StarletteAdminAuthProvider(self.session_maker),
                         title='Projectoscope Admin',
                         secret_key=os.environ['STARLETTE_ADMIN_SECRET_KEY'],
-                        templates_dir='templates/sa')
+                        templates_dir='src/lockss/projectoscope/templates/sa')
         admin.add_view(InitiativeView())
         admin.add_view(OrganizationView())
         admin.add_view(UserView())
         admin.add_view(ProfileView()) # FIXME Would like to not be visible in the menu
-        admin.add_link(Link(menu_label='My Profile', icon=ProfileView.icon, url=f'{admin.base_url}/{ProfileView.key}/detail'))
         admin.mount_to(self.app)
 
     @asynccontextmanager
