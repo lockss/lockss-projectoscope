@@ -89,7 +89,8 @@ class MyApp:
                         auth_provider=StarletteAdminAuthProvider(self.session_maker),
                         title='Projectoscope Admin',
                         secret_key=os.environ['STARLETTE_ADMIN_SECRET_KEY'],
-                        templates_dir='src/lockss/projectoscope/templates/sa')
+                        static_dir='src/lockss/projectoscope/starlette_admin/static',
+                        templates_dir='src/lockss/projectoscope/starlette_admin/templates')
         admin.add_view(InitiativeView())
         admin.add_view(OrganizationView())
         admin.add_view(UserView())

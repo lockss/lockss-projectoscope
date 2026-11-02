@@ -1,5 +1,11 @@
 {% extends "@starlette-admin/layout.html" %}
 
+{% block head_css %}
+{# from @starlette-admin/base.html #}
+{{ super() }}
+<link rel="stylesheet" href="{{ static_url(request, 'css/projectoscope-starlette-admin.css') }}">
+{% endblock head_css %}
+
 {% block user_menu_items %}
 <a href="{{ request.url_for('admin:detail', key='profile') }}" class="dropdown-item"><i class="fa-solid fa-user"></i>View My Profile</a>
 <a href="{{ request.url_for('admin:edit', key='profile') }}" class="dropdown-item"><i class="fa-solid fa-user-gear"></i>Edit My Profile</a>
