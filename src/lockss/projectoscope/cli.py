@@ -39,8 +39,8 @@ from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from . import __copyright__, __license__, __version__
-from .orm.sqlmodel import AsyncSessionMaker, make_async_engine, make_async_session_maker
-from .models.users import User, UserBase
+from .models.users import User
+from .sqlmodel.asyncio import AsyncSessionMaker, make_async_engine, make_async_session_maker
 
 
 #: The debug option group: --show-params, --time/--no-time
@@ -72,16 +72,17 @@ def copyright(ctx: Context, **kwargs) -> None:
 @option_group(
     'User options',
     'Interactive prompts if not given.',
-    *[option(f'--{n.replace("_", "-")}', is_flag=True, default=(n == 'is_active'), prompt=f.title, help=f'The user {n.replace("_", " ")}') \
+    *[option(f'--{n.replace("_", "-")}', is_flag=True, default=(n == 'active'), prompt=f.title, help=f'{f.title} flag') \
       if f.annotation == bool \
       else option(f'--{n.replace("_", "-")}', metavar='TEXT', prompt=f.title, help=f.title)
-      for n, f in UserBase.model_fields.items()]
+      for n, f in User.model_fields.items()
+      if n in {'handle', 'first_name', 'last_name', 'email', 'active', 'admin', 'superuser'}]
 )
 @_top_level_command
 def create_user(ctx: Context, **kwargs) -> None:
     async def _create_user(ctx: Context, **kwargs) -> None:
         load_dotenv()
-        user_dict: dict[str, Any] = subdict(kwargs, keep=(n for n in UserBase.model_fields))
+        user_dict: dict[str, Any] = subdict(kwargs, keep=(n for n in User.model_fields))
         user_dict['hashed_password'] = User.hash_password(prompt('Password', hide_input=True, confirmation_prompt=True))
         try:
             user: User = User.model_validate(user_dict)
@@ -94,7 +95,7 @@ def create_user(ctx: Context, **kwargs) -> None:
                 session.add(user)
                 await session.commit()
                 await session.refresh(user)
-                echo(user.model_dump_json(exclude={'hashed_password'}))
+                echo(user.model_dump_json(exclude={'hashed_password'}, indent=4))
         finally:
             await engine.dispose()
     asyncio.run(_create_user(ctx, **kwargs))
