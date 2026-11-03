@@ -36,8 +36,8 @@ from starlette_admin import StringField, ComputedField, PasswordField, BooleanFi
 from starlette_admin.exceptions import FormValidationError
 from starlette_admin.filters import FilterRegistry
 
-from lockss.projectoscope.models.users import User, user_
-from lockss.projectoscope.views import PJSModelView, gray, NON_COMPUTED_FIELD_ACTIONS, COMPUTED_FIELD_ACTIONS
+from ..models.users import User, user_
+from ..views import PJSModelView, gray, NON_COMPUTED_FIELD_ACTIONS, COMPUTED_FIELD_ACTIONS
 
 
 class ProfileView(PJSModelView): # Note: not StrictSQLModel
