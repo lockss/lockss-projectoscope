@@ -81,15 +81,17 @@ class MyApp:
                 return await super()._find_object_or_404(request, view, key, pk, action)
 
         admin = MyAdmin(self.engine,
+                        base_url='/hq',
+                        route_name='hq',
+                        title='Projectoscope HQ',
                         auth_provider=StarletteAdminAuthProvider(self.session_maker),
-                        title='Projectoscope Admin',
                         secret_key=os.environ['STARLETTE_ADMIN_SECRET_KEY'],
                         static_dir='src/lockss/projectoscope/starlette_admin/static',
                         templates_dir='src/lockss/projectoscope/starlette_admin/templates')
         admin.add_view(InitiativeView())
         admin.add_view(OrganizationView())
         admin.add_view(UserView())
-        admin.add_view(ProfileView()) # FIXME Would like to not be visible in the menu
+        admin.add_view(ProfileView())
         admin.mount_to(self.app)
 
     @asynccontextmanager
@@ -115,4 +117,4 @@ app: FastAPI = myapp.app # To be auto-detectable by FastAPI
 
 @app.get('/')
 def root():
-    return {"message": "Hello world!"}
+    return {"message": "Welcome to Projectoscope"}

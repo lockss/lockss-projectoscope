@@ -31,6 +31,6 @@ POSSIBILITY OF SUCH DAMAGE.
 */
 
 /* Hide the ProfileView from the sidebar and default central index */
-div#sidebar-menu li.nav-item:has(a[href$="/admin/profile/list"]), div.container-xl div.card:has(div.card-body a[href$="/admin/profile/list"]) {
+div#sidebar-menu li.nav-item:has(a[href$="/profile/list"]), div.container-xl div.card:has(div.card-body a[href$="/profile/list"]) {
   display: none;
 }
