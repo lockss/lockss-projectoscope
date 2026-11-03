@@ -27,35 +27,3 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-
-from re import Pattern, compile
-from typing import Annotated, Any, Final, LiteralString, TypeAlias
-
-from pydantic import ConfigDict, StringConstraints, ValidationError
-from pydantic_core import InitErrorDetails, PydanticCustomError
-
-
-HANDLE_MAX_LENGTH: Final[int] = 20
-
-
-HANDLE_RE: Final[Pattern] = compile(r'^[-_a-z0-9]{1,' + str(HANDLE_MAX_LENGTH) + r'}$')
-
-
-Handle: TypeAlias = Annotated[str, StringConstraints(pattern=HANDLE_RE)]
-
-
-SHORT_NAME_LENGTH: Final[int] = 20
-
-
-ShortName: TypeAlias = Annotated[str, StringConstraints(max_length=SHORT_NAME_LENGTH)]
-
-
-ErrorTuple: TypeAlias = tuple[LiteralString, LiteralString, LiteralString, dict[str, Any] | None]
-
-
-def make_field_error(cls: type, model: Any, *tups: ErrorTuple) -> ValidationError:
-    return ValidationError.from_exception_data(title=cls.__name__,
-                                               line_errors=[InitErrorDetails(loc=(t[0],),
-                                                                             input=getattr(model, t[0]),
-                                                                             type=PydanticCustomError(*t[1:]))
-                                                            for t in tups])

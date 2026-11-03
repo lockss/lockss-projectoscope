@@ -67,9 +67,6 @@ class PJSModelView(ModelView):
     show_goto_page = True
     row_click_navigate = False
 
-    # Our own settings
-    hide_from_sidebar = False
-
     async def validate(self, request: Request, data: dict[str, Any]) -> None:
         try:
             await self.validate_call(request, data)

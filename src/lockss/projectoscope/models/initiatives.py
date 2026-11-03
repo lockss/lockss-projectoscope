@@ -34,7 +34,8 @@ from uuid import UUID, uuid4
 from sqlmodel import Field, Relationship, SQLModel
 from starlette.requests import Request
 
-from . import Handle, ShortName
+from ..pydantic.abbreviation import Abbreviation
+from ..pydantic.handle import Handle
 
 if TYPE_CHECKING:
     from .organizations import Organization
@@ -49,7 +50,7 @@ class Initiative(SQLModel, table=True):
     id: UUID | None = Field(default_factory=uuid4, primary_key=True, index=True, title='UUID')
     handle: Handle = Field(unique=True, index=True, title='Initiative Handle')
     name: str = Field(min_length=1, max_length=NAME_LENGTH, title='Name')
-    short_name: ShortName | None = Field(unique=True, title='Short Name')
+    short_name: Abbreviation | None = Field(unique=True, title='Short Name')
 
     organizations: list['Organization'] = Relationship(back_populates='initiative')
 
