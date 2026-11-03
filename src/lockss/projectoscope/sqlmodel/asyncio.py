@@ -28,7 +28,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import os
 from typing import TypeAlias
 
 from sqlalchemy import URL
@@ -38,9 +37,9 @@ from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker, create_async
 AsyncSessionMaker: TypeAlias = async_sessionmaker
 
 
-def make_async_engine(database_url: str | URL | None = None,
+def make_async_engine(database_url: str | URL,
                       echo: bool = False) -> AsyncEngine:
-    return create_async_engine(database_url or os.environ['DATABASE_URL'], echo=echo)
+    return create_async_engine(database_url, echo=echo)
 
 
 def make_async_session_maker(engine: AsyncEngine,

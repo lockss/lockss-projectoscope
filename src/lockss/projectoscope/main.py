@@ -43,6 +43,7 @@ from starlette.status import HTTP_403_FORBIDDEN
 from starlette_admin.contrib.sqlmodel import Admin
 from starlette_admin.views import BaseModelView
 
+from .db import vet_database_url
 from .sqlmodel.asyncio import AsyncSessionMaker, make_async_engine, make_async_session_maker
 from .starlette_admin.auth import StarletteAdminAuthProvider
 from .views.initiatives import InitiativeView
@@ -62,7 +63,7 @@ class MyApp:
     templates: Jinja2Templates
 
     def __init__(self):
-        self.engine = make_async_engine(echo=True)
+        self.engine = make_async_engine(vet_database_url(os.environ['DATABASE_URL']), echo=True) # FIXME
         self.session_maker = make_async_session_maker(self.engine)
         self.app = FastAPI(lifespan=self.lifespan)
         self.app.mount('/static/css', StaticFiles(directory='src/lockss/projectoscope/static/css'), name='css')
