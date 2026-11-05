@@ -42,6 +42,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from starlette.status import HTTP_403_FORBIDDEN
 from starlette_admin.contrib.sqlmodel import Admin
 from starlette_admin.views import BaseModelView
+import uvicorn
 
 from .db import vet_database_url
 from .sqlmodel.asyncio import AsyncSessionMaker, make_async_engine, make_async_session_maker
@@ -119,3 +120,12 @@ app: FastAPI = myapp.app # To be auto-detectable by FastAPI
 @app.get('/')
 def root():
     return {"message": "Welcome to Projectoscope"}
+
+
+def main() -> None:
+    print(f'{ "=" * (n := 32) } DEVELOPMENT MODE { "=" * n }') # FIXME
+    uvicorn.run("lockss.projectoscope.main:app", host="127.0.0.1", port=8000, reload=True) # FIXME
+
+
+if __name__ == '__main__':
+    main()

@@ -1,6 +1,6 @@
 # Configuraation assets
-/.env
-/ca.crt
+/.env*
+/config/
 
 # sqlite-asyncio
 /aiosqlite.db*
@@ -13,9 +13,7 @@
 /**/*.py[co]
 
 # Doit artifacts
-/.doit.db
-/.doit.db-shm
-/.doit.db-wal
+/.doit.db*
 
 # PyCharm artifacts
 /.idea/
