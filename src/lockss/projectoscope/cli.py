@@ -39,7 +39,7 @@ from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from . import __copyright__, __license__, __version__
-from .models.users import User
+from .hq.models.users import User
 from .sqlmodel.asyncio import AsyncSessionMaker, make_async_engine, make_async_session_maker
 
 

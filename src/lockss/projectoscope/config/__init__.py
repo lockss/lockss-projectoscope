@@ -28,24 +28,29 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from typing import Literal, Self, TypeAlias, Union
+from abc import ABC
+from typing import Annotated, ClassVar, Literal, Self, TypeAlias, Union
 
-from pydantic import Field, model_validator
+from boltons.iterutils import bucketize
+from boltons.strutils import unit_len
+from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class OverseerSettings(BaseSettings):
     model_config = SettingsConfigDict(env_file='.env')
 
-    is_hq: bool = Field(False, title='Is HQ')
-    database_url: str = Field(title='Database URL')
-    secret_key: str = Field(title='Secret Key')
+    database_url: SecretStr = Field(title='Database URL')
+    secret_key: SecretStr = Field(title='Secret Key')
 
 
-class ControllerSettings(BaseSettings):
-    title: str = Field(title='Title')
-    route_name: str = Field(title='Route Name')
-    base_url: str | None = Field(title='Base URL')
+class BaseControllerSettings(BaseSettings, ABC):
+    title: str = Field(title='Title',
+                       description='The title of this controller')
+    route_name: str = Field(title='Route Name',
+                            description='The route name of this controller')
+    base_url: str | None = Field(title='Base URL',
+                                 description='The base URL of this controller, derived from the route name by default')
 
     @model_validator(mode='after')
     def _default_base_url(self) -> Self:
@@ -53,23 +58,55 @@ class ControllerSettings(BaseSettings):
         return self
 
 
-class HqSettings(ControllerSettings):
+ControllerType: TypeAlias = Literal[
+    'hq',
+    'garage',
+]
+
+
+class HqSettings(BaseControllerSettings):
+    TYPE: ClassVar[str] = 'hq'
+
+    type: Literal['hq'] = 'hq'
     title: str = 'Projectoscope HQ'
     route_name: Literal['hq'] = 'hq'
     base_url: Literal['/hq'] = '/hq'
 
 
-class GarageControllerSettings(ControllerSettings):
+class GarageControllerSettings(BaseControllerSettings):
+    TYPE: ClassVar[str] = 'garage'
+
+    type: Literal['garage'] = 'garage'
     title: str = 'Projectoscope Garage Controller'
     route_name: str = 'garage-controller'
 
 
-ControllerSettingsType: TypeAlias = Union[
-    HqSettings,
-    GarageControllerSettings,
+ControllerSettings: TypeAlias = Annotated[
+    Union[
+        HqSettings,
+        GarageControllerSettings,
+    ],
+    Field(discriminator='type')
 ]
 
 
 class ProjectoscopeSettings(BaseSettings):
-    overseer: OverseerSettings = Field(title='Overseer Settings')
-    controllers: list[ControllerSettings] = Field(title='Controllers')
+    overseer: OverseerSettings = Field(title='Overseer Settings',
+                                       description='The overseer settings for this Projectoscope instance')
+    controllers: list[ControllerSettings] = Field(title='Controllers',
+                                                  description='The list of controllers for this Projectoscope instance')
+
+    @model_validator(mode='after')
+    def _validate_controllers(self) -> Self:
+        errors: list[str] = []
+        if (nc := len(bucketize(self.controllers, 'type').get(hqtyp := HqSettings.TYPE, []))) > 1:
+            errors.append(f'{nc} controllers are of type "{hqtyp}"')
+        for route_name, controllers in bucketize(self.controllers, 'route_name').items():
+            if (nc := len(controllers)) > 1:
+                errors.append(f'{nc} controllers share the route name "{route_name}"')
+        for base_url, controllers in bucketize(self.controllers, 'base_url').items():
+            if (nc := len(controllers)) > 1:
+                errors.append(f'{nc} controllers share the base URL "{base_url}"')
+        if errors:
+            raise ValueError(f'{unit_len(errors, "error")}: {"; ".join(errors)}')
+        return self

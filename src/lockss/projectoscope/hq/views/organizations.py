@@ -28,35 +28,30 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from typing import ClassVar, TYPE_CHECKING
-from uuid import UUID, uuid4
-
-from sqlmodel import Field, Relationship, SQLModel
 from starlette.requests import Request
+from starlette_admin.fields import HasMany
 
-from ..pydantic.abbreviation import Abbreviation
-from ..pydantic.handle import Handle
-from .initiatives import Initiative
-
-if TYPE_CHECKING:
-    from .users import User
+from . import PJSModelView
+from ..models.organizations import Organization
+from ..models.users import user_
 
 
-class Organization(SQLModel, table=True):
+class OrganizationView(PJSModelView):
 
-    NAME_LENGTH: ClassVar[int] = 60
+    icon = 'fa-solid fa-people-roof'
+    fields = ['id', 'handle', 'name', 'short_name', 'initiative', HasMany('users', key='user')]
+    exclude_fields_from_list = ['id', 'users']
+    fields_default_sort = ['name']
+    searchable_fields = ['id', 'handle', 'name', 'short_name']
 
-    __tablename__ = 'organizations'
+    def __init__(self, *args, **kwargs):
+        super().__init__(Organization, *args, **kwargs)
 
-    id: UUID | None = Field(default_factory=uuid4, primary_key=True, index=True, title='UUID')
+    def is_accessible(self, request: Request) -> bool:
+        return (u := user_(request)).active and u.admin
 
-    initiative_id: UUID | None = Field(default=None, foreign_key='initiatives.id')
-    initiative: Initiative | None = Relationship(back_populates='organizations')
-    handle: Handle = Field(unique=True, index=True, title='Organization Handle')
-    name: str = Field(min_length=1, max_length=NAME_LENGTH, title='Name')
-    short_name: Abbreviation | None = Field(unique=True, title='Short Name')
+    def can_delete(self, request: Request) -> bool:
+        return False
 
-    users: list['User'] = Relationship(back_populates='organization')
-
-    def __admin_repr__(self, request: Request) -> str:
-        return f'{self.name}{f" ({sn})" if (sn := self.short_name) else ""}'
+    def can_import(self, request: Request) -> bool:
+        return False

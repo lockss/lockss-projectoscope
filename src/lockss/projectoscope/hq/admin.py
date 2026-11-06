@@ -28,29 +28,34 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from typing import Any
+
+from starlette.exceptions import HTTPException
 from starlette.requests import Request
-from starlette_admin.fields import HasMany
+from starlette.status import HTTP_403_FORBIDDEN
+from starlette_admin import BaseModelView
+from starlette_admin.contrib.sqlmodel import Admin
 
-from . import PJSModelView
-from ..models.organizations import Organization
-from ..models.users import user_
+from .models.users import user_
+from .views.profile import ProfileView
 
-class OrganizationView(PJSModelView):
 
-    icon = 'fa-solid fa-people-roof'
-    fields = ['id', 'handle', 'name', 'short_name', 'initiative', HasMany('users', key='user')]
-    exclude_fields_from_list = ['id', 'users']
-    fields_default_sort = ['name']
-    searchable_fields = ['id', 'handle', 'name', 'short_name']
+class HqAdmin(Admin):
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(Organization, *args, **kwargs)
-
-    def is_accessible(self, request: Request) -> bool:
-        return (u := user_(request)).active and u.admin
-
-    def can_delete(self, request: Request) -> bool:
-        return False
-
-    def can_import(self, request: Request) -> bool:
-        return False
+    async def _find_object_or_404(self,
+                                  request: Request,
+                                  view: BaseModelView,
+                                  key: str | None,
+                                  pk: str | None,
+                                  action: str) -> Any:
+        """
+        Hack required to narrow down ProfileView to only the primary key of the user
+        """
+        if isinstance(view, ProfileView) and key == 'profile' and (action == 'detail' or action == 'edit'):
+            if not (user := user_(request)):
+                raise HTTPException(HTTP_403_FORBIDDEN)
+            upk: str = str(user.id) # FIXME pk:str/pk:UUID inconsistencies
+            if pk and pk != upk:
+                raise HTTPException(HTTP_403_FORBIDDEN)
+            pk = upk
+        return await super()._find_object_or_404(request, view, key, pk, action)

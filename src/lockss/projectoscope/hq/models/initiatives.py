@@ -34,8 +34,8 @@ from uuid import UUID, uuid4
 from sqlmodel import Field, Relationship, SQLModel
 from starlette.requests import Request
 
-from ..pydantic.abbreviation import Abbreviation
-from ..pydantic.handle import Handle
+from lockss.projectoscope.pydantic.abbreviation import Abbreviation
+from lockss.projectoscope.pydantic.handle import Handle
 
 if TYPE_CHECKING:
     from .organizations import Organization

@@ -37,8 +37,8 @@ from sqlmodel import Field, Relationship, SQLModel
 from starlette.requests import Request
 from starlette_admin.auth import AdminUser
 
-from ..pydantic.errors import make_field_error
-from ..pydantic.handle import Handle
+from lockss.projectoscope.pydantic.errors import make_field_error
+from lockss.projectoscope.pydantic.handle import Handle
 from .organizations import Organization
 
 

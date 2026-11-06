@@ -1,0 +1,62 @@
+#!/usr/bin/env python3
+
+# Copyright (c) 2000-2026, Board of Trustees of Leland Stanford Jr. University
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice,
+# this list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+# this list of conditions and the following disclaimer in the documentation
+# and/or other materials provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its contributors
+# may be used to endorse or promote products derived from this software without
+# specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+from typing import ClassVar, TYPE_CHECKING
+from uuid import UUID, uuid4
+
+from sqlmodel import Field, Relationship, SQLModel
+from starlette.requests import Request
+
+from lockss.projectoscope.pydantic.abbreviation import Abbreviation
+from lockss.projectoscope.pydantic.handle import Handle
+from .initiatives import Initiative
+
+if TYPE_CHECKING:
+    from .users import User
+
+
+class Organization(SQLModel, table=True):
+
+    NAME_LENGTH: ClassVar[int] = 60
+
+    __tablename__ = 'organizations'
+
+    id: UUID | None = Field(default_factory=uuid4, primary_key=True, index=True, title='UUID')
+
+    initiative_id: UUID | None = Field(default=None, foreign_key='initiatives.id')
+    initiative: Initiative | None = Relationship(back_populates='organizations')
+    handle: Handle = Field(unique=True, index=True, title='Organization Handle')
+    name: str = Field(min_length=1, max_length=NAME_LENGTH, title='Name')
+    short_name: Abbreviation | None = Field(unique=True, title='Short Name')
+
+    users: list['User'] = Relationship(back_populates='organization')
+
+    def __admin_repr__(self, request: Request) -> str:
+        return f'{self.name}{f" ({sn})" if (sn := self.short_name) else ""}'

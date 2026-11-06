@@ -40,7 +40,7 @@ from ..models.users import User, user_
 from ..views import PJSModelView, gray, NON_COMPUTED_FIELD_ACTIONS, COMPUTED_FIELD_ACTIONS
 
 
-class ProfileView(PJSModelView): # Note: not StrictSQLModel
+class ProfileView(PJSModelView):
     key = 'profile'
     menu_label = 'Profile'
     icon = 'fa-solid fa-user'
