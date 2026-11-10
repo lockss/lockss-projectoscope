@@ -29,31 +29,39 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """
-Projectoscope component acting as the overseer of a Projectoscope cluster.
+Projectoscope component for superusers of a Projectoscope cluster.
 """
 
-from sqlalchemy.ext.asyncio import AsyncEngine
-from starlette.applications import Starlette
-from starlette_admin.auth import BaseAuthProvider
+from typing import TYPE_CHECKING
 
+from starlette_admin import DropDown
+
+from ..component import Component
 from ..config import HqSettings, OverseerSettings
 from .admin import HqAdmin
 from .views.initiatives import InitiativeView
 from .views.organizations import OrganizationView
 from .views.users import UserView
 
+if TYPE_CHECKING:
+    from ..main import Projectoscope
 
-def set_up_hq(overseer_settings: OverseerSettings,
-              hq_settings: HqSettings,
-              app: Starlette,
-              engine: AsyncEngine,
-              auth_provider: BaseAuthProvider) -> None:
-    hq_admin: HqAdmin = HqAdmin(engine,
-                                route_name=hq_settings.route_name,
-                                base_url=hq_settings.base_url,
-                                title=hq_settings.title,
-                                auth_provider=auth_provider,
-                                secret_key=overseer_settings.secret_key.get_secret_value())
-    for view in (InitiativeView(), OrganizationView(), UserView()):
-        hq_admin.add_view(view)
-    hq_admin.mount_to(app)
+
+class HqComponent(Component[HqSettings]):
+
+    def __init__(self,
+                 overseer_settings: OverseerSettings,
+                 hq_settings: HqSettings):
+        super().__init__(overseer_settings, hq_settings)
+
+    def set_up_admin(self, app: Projectoscope) -> None:
+        app.admin.add_view(DropDown(self.component_settings.title,
+                                    [
+                                        InitiativeView(),
+                                        OrganizationView(),
+                                        UserView()
+                                    ],
+                                    icon='fa-solid fa-screwdriver-wrench'))
+
+    def set_up_api(self, app: Projectoscope) -> None:
+        pass # No API

@@ -28,25 +28,32 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from sqlalchemy.ext.asyncio import AsyncEngine
-from starlette.applications import Starlette
-from starlette_admin.auth import BaseAuthProvider
+from abc import ABC, abstractmethod
+from typing import TypeVar, Generic, TYPE_CHECKING
 
-from ..config import ControllerSettings, OverseerSettings
+from .config import ComponentSettings, OverseerSettings
 
-from .views.profile import ProfileView
+if TYPE_CHECKING:
+    from .main import Projectoscope
 
 
-def set_up_scaffold(overseer_settings: OverseerSettings,
-                    profile_settings: ScaffoldSettings,
-                    app: Starlette,
-                    engine: AsyncEngine,
-                    auth_provider: BaseAuthProvider) -> None:
-    scaffold_admin: ProfileAdmin = ProfileAdmin(engine,
-                                               route_name=profile_settings.route_name,
-                                               base_url=profile_settings.base_url,
-                                               title=profile_settings.title,
-                                               auth_provider=auth_provider,
-                                               secret_key=overseer_settings.secret_key.get_secret_value())
-    scaffold_admin.add_view(ProfileView())
-    scaffold_admin.mount_to(app)
+ComponentSettingsT = TypeVar('ComponentSettingsT', bound=ComponentSettings)
+
+
+class Component(ABC, Generic[ComponentSettingsT]):
+    overseer_settings: OverseerSettings
+    component_settings: ComponentSettingsT
+
+    def __init__(self,
+                 overseer_settings: OverseerSettings,
+                 component_settings: ComponentSettingsT):
+        self.overseer_settings = overseer_settings
+        self.component_settings = component_settings
+
+    @abstractmethod
+    def set_up_admin(self, app: Projectoscope) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def set_up_api(self, app: Projectoscope) -> None:
+        raise NotImplementedError

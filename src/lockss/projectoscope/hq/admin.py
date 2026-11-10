@@ -37,7 +37,7 @@ from starlette_admin import BaseModelView
 from starlette_admin.contrib.sqlmodel import Admin
 
 from .models.users import user_
-from lockss.projectoscope.scaffold.views.profile import ProfileView
+from lockss.projectoscope.views.profile import ProfileView
 
 
 class HqAdmin(Admin):

@@ -1,9 +1,0 @@
-/*
- * color-modes.css
- */
-
- /* Note: the symbol bd-theme appears in color-modes.js */
-
-.bd-theme .dropdown-menu .active .bi {
-  display: block !important;
-}

@@ -44,47 +44,44 @@ class OverseerSettings(BaseSettings):
     secret_key: SecretStr = Field(title='Secret Key')
 
 
-class BaseControllerSettings(BaseSettings, ABC):
+class BaseComponentSettings(BaseSettings, ABC):
     title: str = Field(title='Title',
-                       description='The title of this controller')
-    route_name: str = Field(title='Route Name',
-                            description='The route name of this controller')
-    base_url: str | None = Field(title='Base URL',
-                                 description='The base URL of this controller, derived from the route name by default')
-
-    @model_validator(mode='after')
-    def _default_base_url(self) -> Self:
-        self.base_url = self.base_url or f'/{self.route_name}'
-        return self
+                       description='The title of this component')
 
 
-ControllerType: TypeAlias = Literal[
+ComponentType: TypeAlias = Literal[
     'hq',
     'garage',
+    'profile',
 ]
 
 
-class HqSettings(BaseControllerSettings):
-    TYPE: ClassVar[str] = 'hq'
+class HqSettings(BaseComponentSettings):
+    TYPE: ClassVar[Literal['hq']] = 'hq'
 
-    type: Literal['hq'] = 'hq'
+    type: Literal['hq'] = TYPE
     title: str = 'Projectoscope HQ'
-    route_name: Literal['hq'] = 'hq'
-    base_url: Literal['/hq'] = '/hq'
 
 
-class GarageControllerSettings(BaseControllerSettings):
-    TYPE: ClassVar[str] = 'garage'
+class GarageComponentSettings(BaseComponentSettings):
+    TYPE: ClassVar[Literal['garage']] = 'garage'
 
-    type: Literal['garage'] = 'garage'
-    title: str = 'Projectoscope Garage Controller'
-    route_name: str = 'garage-controller'
+    type: Literal['garage'] = TYPE
+    title: str = 'Garage Controller'
 
 
-ControllerSettings: TypeAlias = Annotated[
+class ProfileSettings(BaseComponentSettings):
+    TYPE: ClassVar[Literal['profile']] = 'profile'
+
+    type: Literal['profile'] = TYPE
+    title: str = 'Projectoscope Profile'
+
+
+ComponentSettings: TypeAlias = Annotated[
     Union[
         HqSettings,
-        GarageControllerSettings,
+        GarageComponentSettings,
+        ProfileSettings,
     ],
     Field(discriminator='type')
 ]
@@ -93,27 +90,21 @@ ControllerSettings: TypeAlias = Annotated[
 class ProjectoscopeSettings(BaseSettings):
     overseer: OverseerSettings = Field(title='Overseer Settings',
                                        description='The overseer settings for this Projectoscope instance')
-    controllers: list[ControllerSettings] = Field(title='Controllers',
-                                                  description='The list of controllers for this Projectoscope instance')
+    components: list[ComponentSettings] = Field(title='Components',
+                                                description='The list of components for this Projectoscope instance')
 
     @model_validator(mode='after')
-    def _validate_controllers(self) -> Self:
+    def _validate_components(self) -> Self:
         errors: list[str] = []
-        if (nc := len(bucketize(self.controllers, 'type').get(hqtyp := HqSettings.TYPE, []))) > 1:
-            errors.append(f'{nc} controllers are of type "{hqtyp}"')
-        for route_name, controllers in bucketize(self.controllers, 'route_name').items():
-            if (nc := len(controllers)) > 1:
-                errors.append(f'{nc} controllers share the route name "{route_name}"')
-        for base_url, controllers in bucketize(self.controllers, 'base_url').items():
-            if (nc := len(controllers)) > 1:
-                errors.append(f'{nc} controllers share the base URL "{base_url}"')
+        if (nc := len(bucketize(self.components, 'type').get(hqtyp := HqSettings.TYPE, []))) > 1:
+            errors.append(f'{nc} components are of type "{hqtyp}"')
         if errors:
             raise ValueError(f'{unit_len(errors, "error")}: {"; ".join(errors)}')
         return self
 
     def is_hq(self) -> bool:
-        return any(c.type == HqSettings.TYPE for c in self.controllers)
+        return any(c.type == HqSettings.TYPE for c in self.components)
 
 
-def controller_sort_key(settings: ControllerSettings) -> int:
-    return ControllerType.__args__.index(settings.type) # raises ValueError
+def component_sort_key(settings: ComponentSettings) -> int:
+    return ComponentType.__args__.index(settings.type) # raises ValueError
