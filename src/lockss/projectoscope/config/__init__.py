@@ -110,3 +110,10 @@ class ProjectoscopeSettings(BaseSettings):
         if errors:
             raise ValueError(f'{unit_len(errors, "error")}: {"; ".join(errors)}')
         return self
+
+    def is_hq(self) -> bool:
+        return any(c.type == HqSettings.TYPE for c in self.controllers)
+
+
+def controller_sort_key(settings: ControllerSettings) -> int:
+    return ControllerType.__args__.index(settings.type) # raises ValueError
