@@ -38,7 +38,6 @@ from fastapi import FastAPI
 from lockss.pybasic.errorutil import InternalError
 from lockss.pybasic.fileutil import PathOrStr, path
 from sqlalchemy.ext.asyncio import AsyncEngine
-from sqlmodel import SQLModel
 from starlette.middleware.sessions import SessionMiddleware
 from starlette_admin.auth import BaseAuthProvider
 import uvicorn
@@ -48,7 +47,6 @@ from .admin import ProjectoscopeAdmin
 from .component import Component
 from .config import HqSettings, ProfileSettings, ProjectoscopeSettings, component_sort_key, GarageComponentSettings
 from .db import vet_database_url
-from .garage import GarageComponent
 from .hq import HqComponent
 from .profile import ProfileComponent
 from .sqlmodel.asyncio import AsyncSessionMaker, make_async_engine, make_async_session_maker
@@ -80,9 +78,6 @@ class Projectoscope:
 
     @asynccontextmanager
     async def lifespan_db(self, app: FastAPI):
-        async with self.engine.begin() as conn:
-            # await conn.run_sync(SQLModel.metadata.drop_all)
-            await conn.run_sync(SQLModel.metadata.create_all)
         yield
         await self.engine.dispose()
 
@@ -101,13 +96,10 @@ class Projectoscope:
             component: Component
             match typ := settings.type:
                 case HqSettings.TYPE:
-                    hq = HqComponent(self.settings.overseer, cast(HqSettings, settings))
-                    hq.set_up_admin(self)
-                    hq.set_up_api(self)
+                    HqComponent(self.settings.overseer, cast(HqSettings, settings)).set_up(self)
                 case GarageComponentSettings.TYPE:
-                    garage = GarageComponent(self.settings.overseer, cast(GarageComponentSettings, settings))
-                    garage.set_up_admin(self)
-                    garage.set_up_api(self)
+                    from .garage import GarageComponent
+                    GarageComponent(self.settings.overseer, cast(GarageComponentSettings, settings)).set_up(self)
                 case _:
                     raise InternalError from ValueError(typ)
         if self.settings.is_hq():

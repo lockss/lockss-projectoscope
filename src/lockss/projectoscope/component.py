@@ -50,6 +50,10 @@ class Component(ABC, Generic[ComponentSettingsT]):
         self.overseer_settings = overseer_settings
         self.component_settings = component_settings
 
+    def set_up(self, app: Projectoscope) -> None:
+        self.set_up_admin(app)
+        self.set_up_api(app)
+
     @abstractmethod
     def set_up_admin(self, app: Projectoscope) -> None:
         raise NotImplementedError

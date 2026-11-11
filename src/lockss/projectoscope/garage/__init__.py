@@ -48,7 +48,7 @@ class GarageComponent(Component[GarageComponentSettings]):
 
     def set_up_admin(self, app: Projectoscope) -> None:
         from starlette_admin import Link
-        app.admin.add_view(Link(url='#', menu_label='Garage', icon='fa-solid fa-square-parking'))
+        app.admin.add_view(Link(url='#', menu_label='Garage', icon='fa-solid fa-bucket'))
 
     def set_up_api(self, app: Projectoscope) -> None:
         pass # No API
