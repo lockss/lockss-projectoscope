@@ -29,6 +29,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import asyncio
+import os
 from typing import Any
 
 from boltons.dictutils import subdict
@@ -88,7 +89,7 @@ def create_user(ctx: Context, **kwargs) -> None:
             user: User = User.model_validate(user_dict)
         except ValidationError as ve:
             ctx.fail(str(ve))
-        engine: AsyncEngine = make_async_engine()
+        engine: AsyncEngine = make_async_engine(os.environ['DATABASE_URL'], echo=True)
         try:
             session_maker: AsyncSessionMaker = make_async_session_maker(engine)
             async with session_maker() as session:
