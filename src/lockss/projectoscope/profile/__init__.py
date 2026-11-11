@@ -28,4 +28,35 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from typing import Any, TYPE_CHECKING
 
+from starlette.exceptions import HTTPException
+from starlette.requests import Request
+from starlette.status import HTTP_403_FORBIDDEN
+from starlette_admin import BaseModelView
+
+from ..config import ProfileSettings
+from ..hq.models.users import user_
+from .views.profile import ProfileView
+from ..component import Component, ComponentSettingsT
+
+if TYPE_CHECKING:
+    from ..main import Projectoscope
+
+
+class ProfileComponent(Component[ProfileSettings]):
+
+    @staticmethod
+    async def _find_object_or_404(self, request: Request, view: BaseModelView, key: str | None, pk: str | None, action: str) -> Any:
+        if isinstance(view, ProfileView) and key == 'profile' and (action == 'detail' or action == 'edit'):
+            upk = str(user_(request).id)  # FIXME pk:str/pk:UUID inconsistencies
+            if pk and pk != upk:
+                raise HTTPException(HTTP_403_FORBIDDEN)
+            pk = upk
+
+    def set_up_admin(self, app: Projectoscope) -> None:
+        app.admin.add_view(ProfileView())
+        app.admin.add_find_object_or_404_behavior(ProfileComponent._find_object_or_404)
+
+    def set_up_api(self, app: Projectoscope) -> None:
+        pass # No API

@@ -29,9 +29,9 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from contextlib import AsyncExitStack, asynccontextmanager
-from importlib import resources
 from pathlib import Path
-from typing import Any, cast
+import sys
+from typing import cast
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
@@ -39,24 +39,20 @@ from lockss.pybasic.errorutil import InternalError
 from lockss.pybasic.fileutil import PathOrStr, path
 from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlmodel import SQLModel
-from starlette.exceptions import HTTPException
 from starlette.middleware.sessions import SessionMiddleware
-from starlette.requests import Request
-from starlette.status import HTTP_403_FORBIDDEN
-from starlette_admin import BaseModelView
 from starlette_admin.auth import BaseAuthProvider
-from starlette_admin.contrib.sqlmodel import Admin
 import uvicorn
 import yaml
 
+from .admin import ProjectoscopeAdmin
 from .component import Component
-from .config import HqSettings, ProjectoscopeSettings, component_sort_key
+from .config import HqSettings, ProfileSettings, ProjectoscopeSettings, component_sort_key, GarageComponentSettings
 from .db import vet_database_url
+from .garage import GarageComponent
 from .hq import HqComponent
-from .hq.models.users import user_
+from .profile import ProfileComponent
 from .sqlmodel.asyncio import AsyncSessionMaker, make_async_engine, make_async_session_maker
 from .starlette_admin.auth import StarletteAdminAuthProvider
-from .views.profile import ProfileView
 
 
 class Projectoscope:
@@ -68,14 +64,13 @@ class Projectoscope:
     api: FastAPI
 
     def __init__(self,
-                 settings_file_path_or_str: PathOrStr):
-        self.load_settings(settings_file_path_or_str)
+                 settings: ProjectoscopeSettings):
+        self.settings = settings
         self.set_up_database()
         self.set_up_auth()
         self.set_up_admin()
         self.set_up_api()
         self.set_up_components()
-        self.set_up_scaffold()
 
     @asynccontextmanager
     async def lifespan(self, app: FastAPI):
@@ -90,12 +85,6 @@ class Projectoscope:
             await conn.run_sync(SQLModel.metadata.create_all)
         yield
         await self.engine.dispose()
-
-    def load_settings(self, settings_file_path_or_str: PathOrStr) -> None:
-        load_dotenv()
-        settings_file_path: Path = path(settings_file_path_or_str)
-        with settings_file_path.open() as settings_file:
-            self.settings = ProjectoscopeSettings.model_validate(yaml.safe_load(settings_file))
 
     def set_up_admin(self) -> None:
         self.admin = ProjectoscopeAdmin(self)
@@ -115,9 +104,18 @@ class Projectoscope:
                     hq = HqComponent(self.settings.overseer, cast(HqSettings, settings))
                     hq.set_up_admin(self)
                     hq.set_up_api(self)
+                case GarageComponentSettings.TYPE:
+                    garage = GarageComponent(self.settings.overseer, cast(GarageComponentSettings, settings))
+                    garage.set_up_admin(self)
+                    garage.set_up_api(self)
                 case _:
                     raise InternalError from ValueError(typ)
-        self.admin.add_view(ProfileView())
+        if self.settings.is_hq():
+            profile: ProfileComponent = ProfileComponent(self.settings.overseer, ProfileSettings())
+            profile.set_up_admin(self)
+            profile.set_up_api(self)
+        else:
+            self.admin.templates.context_processors.append(lambda req: {'overseer_url': self.settings.overseer.url})
         self.admin.mount_to(self.api)
 
     def set_up_database(self) -> None:
@@ -125,44 +123,25 @@ class Projectoscope:
         self.engine = make_async_engine(database_url, echo=True) # FIXME
         self.session_maker = make_async_session_maker(self.engine)
 
-    def set_up_scaffold(self) -> None:
-        pass
+
+# @app.get('/')
+# def root():
+#     return {"message": "Welcome to Projectoscope"}
 
 
-class ProjectoscopeAdmin(Admin):
-
-    def __init__(self, app: Projectoscope):
-        super().__init__(app.engine,
-                         auth_provider=app.auth_provider,
-                         secret_key=app.settings.overseer.secret_key.get_secret_value(),
-                         title='Projectoscope',
-                         base_url='/web',
-                         route_name='web',
-                         templates_dir=str(resources.files(__package__).joinpath('templates')),
-                         static_dir=str(resources.files(__package__).joinpath('static')))
-
-    async def _find_object_or_404(self, request: Request, view: BaseModelView, key: str | None, pk: str | None, action: str) -> Any:
-        if isinstance(view, ProfileView) and key == 'profile' and (action == 'detail' or action == 'edit'):
-            upk = str(user_(request).id)  # FIXME pk:str/pk:UUID inconsistencies
-            if pk and pk != upk:
-                raise HTTPException(HTTP_403_FORBIDDEN)
-            pk = upk
-        return await super()._find_object_or_404(request, view, key, pk, action)
-
-
-projectoscope: Projectoscope = Projectoscope('config/projectoscope.yaml')
-
-
-app: FastAPI = projectoscope.api # To be auto-detectable by FastAPI
-
-
-@app.get('/')
-def root():
-    return {"message": "Welcome to Projectoscope"}
+def load_settings(settings_file_path_or_str: PathOrStr) -> ProjectoscopeSettings:
+    load_dotenv()
+    settings_file_path: Path = path(settings_file_path_or_str)
+    with settings_file_path.open() as settings_file:
+        yaml_obj = yaml.safe_load(settings_file)
+    return ProjectoscopeSettings.model_validate(yaml_obj)
 
 
 def main() -> None:
-    from . import __distribution_name__, __version__
-    print(f'{__distribution_name__} version {__version__}')
-    print(f'{ "=" * (n := 32) } DEVELOPMENT MODE { "=" * n }') # FIXME
-    uvicorn.run(f'{__name__}:app', host="127.0.0.1", port=8000, reload=True) # FIXME
+    settings_arg: str = sys.argv[1:][0] if sys.argv[1:] else 'config/projectoscope.yaml'
+    settings: ProjectoscopeSettings = load_settings(settings_arg)
+    projectoscope = Projectoscope(settings)
+    uvicorn.run(projectoscope.api,
+                host=str(settings.host),
+                port=settings.port,
+                reload=False) # FIXME can't be True unless using import string

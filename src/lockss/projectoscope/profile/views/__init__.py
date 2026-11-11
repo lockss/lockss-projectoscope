@@ -27,35 +27,3 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-
-from typing import Any
-
-from starlette.exceptions import HTTPException
-from starlette.requests import Request
-from starlette.status import HTTP_403_FORBIDDEN
-from starlette_admin import BaseModelView
-from starlette_admin.contrib.sqlmodel import Admin
-
-from .models.users import user_
-from lockss.projectoscope.views.profile import ProfileView
-
-
-class HqAdmin(Admin):
-
-    async def _find_object_or_404(self,
-                                  request: Request,
-                                  view: BaseModelView,
-                                  key: str | None,
-                                  pk: str | None,
-                                  action: str) -> Any:
-        """
-        Hack required to narrow down ProfileView to only the primary key of the user
-        """
-        if isinstance(view, ProfileView) and key == 'profile' and (action == 'detail' or action == 'edit'):
-            if not (user := user_(request)):
-                raise HTTPException(HTTP_403_FORBIDDEN)
-            upk: str = str(user.id) # FIXME pk:str/pk:UUID inconsistencies
-            if pk and pk != upk:
-                raise HTTPException(HTTP_403_FORBIDDEN)
-            pk = upk
-        return await super()._find_object_or_404(request, view, key, pk, action)

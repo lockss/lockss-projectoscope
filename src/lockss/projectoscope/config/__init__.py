@@ -33,7 +33,8 @@ from typing import Annotated, ClassVar, Literal, Self, TypeAlias, Union
 
 from boltons.iterutils import bucketize
 from boltons.strutils import unit_len
-from pydantic import Field, SecretStr, model_validator
+from lockss.pybasic.nodeutil import PortNumber
+from pydantic import Field, HttpUrl, IPvAnyAddress, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -42,6 +43,7 @@ class OverseerSettings(BaseSettings):
 
     database_url: SecretStr = Field(title='Database URL')
     secret_key: SecretStr = Field(title='Secret Key')
+    url: HttpUrl | None = Field(None, title='Overseer URL')
 
 
 class BaseComponentSettings(BaseSettings, ABC):
@@ -88,6 +90,13 @@ ComponentSettings: TypeAlias = Annotated[
 
 
 class ProjectoscopeSettings(BaseSettings):
+    DEFAULT_PORT: ClassVar[PortNumber] = 8000
+
+    host: IPvAnyAddress = Field(title='Host',
+                                description='Host this Projectoscope instance binds to')
+    port: PortNumber = Field(DEFAULT_PORT,
+                             title='Port',
+                             description='Port this Projectoscope instance binds to')
     overseer: OverseerSettings = Field(title='Overseer Settings',
                                        description='The overseer settings for this Projectoscope instance')
     components: list[ComponentSettings] = Field(title='Components',

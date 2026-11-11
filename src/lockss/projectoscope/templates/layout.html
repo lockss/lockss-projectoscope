@@ -7,8 +7,13 @@
 {% endblock head_css %}
 
 {% block user_menu_items %}
+{% if overseer_url is defined %}
+<a href="{{ overseer_url }}web/profile/detail" class="dropdown-item"><i class="fa-solid fa-user"></i>View My Profile<i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+<a href="{{ overseer_url }}web/profile/edit" class="dropdown-item"><i class="fa-solid fa-user-gear"></i>Edit My Profile<i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+{% else %}
 <a href="{{ request.url_for(__name__ ~ ':detail', key='profile') }}" class="dropdown-item"><i class="fa-solid fa-user"></i>View My Profile</a>
 <a href="{{ request.url_for(__name__ ~ ':edit', key='profile') }}" class="dropdown-item"><i class="fa-solid fa-user-gear"></i>Edit My Profile</a>
+{% endif %}
 <div class="dropdown-divider"></div>
 {{ super() }}
 {% endblock user_menu_items %}

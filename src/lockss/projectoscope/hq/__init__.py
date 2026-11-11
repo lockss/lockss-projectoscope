@@ -38,7 +38,6 @@ from starlette_admin import DropDown
 
 from ..component import Component
 from ..config import HqSettings, OverseerSettings
-from .admin import HqAdmin
 from .views.initiatives import InitiativeView
 from .views.organizations import OrganizationView
 from .views.users import UserView
@@ -48,11 +47,6 @@ if TYPE_CHECKING:
 
 
 class HqComponent(Component[HqSettings]):
-
-    def __init__(self,
-                 overseer_settings: OverseerSettings,
-                 hq_settings: HqSettings):
-        super().__init__(overseer_settings, hq_settings)
 
     def set_up_admin(self, app: Projectoscope) -> None:
         app.admin.add_view(DropDown(self.component_settings.title,

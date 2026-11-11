@@ -32,3 +32,23 @@
 Projectoscope controller for a `Garage <https://garagehq.deuxfleurs.fr/>`_ S3
 object store.
 """
+
+from typing import TYPE_CHECKING
+
+from starlette_admin import DropDown
+
+from ..component import Component
+from ..config import GarageComponentSettings
+
+if TYPE_CHECKING:
+    from ..main import Projectoscope
+
+
+class GarageComponent(Component[GarageComponentSettings]):
+
+    def set_up_admin(self, app: Projectoscope) -> None:
+        from starlette_admin import Link
+        app.admin.add_view(Link(url='#', menu_label='Garage', icon='fa-solid fa-square-parking'))
+
+    def set_up_api(self, app: Projectoscope) -> None:
+        pass # No API
