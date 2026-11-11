@@ -28,7 +28,7 @@
 
 [project]
 name = "lockss-projectoscope"
-version = "0.1.0-dev1" # Always change in __init__.py, and at release time in README.rst and CHANGELOG.rst
+version = "0.1.0-dev1" # Change at release time in README.rst and CHANGELOG.rst
 description = "Web application and suite of tools to manage integrated LOCKSS preservation workflows"
 license = { text = "BSD-3-Clause" }
 readme = "README.rst"

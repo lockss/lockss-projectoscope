@@ -28,9 +28,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .. import __package_name__
+from .. import __distribution_name__
 
 try:
     import aiosqlite
 except ImportError as ie:
-    raise ImportError(f'The optional dependencies for SQLite are not installed; install {__package_name__}[sqlite]') from ie
+    raise ImportError(f'The optional dependencies for SQLite are not installed; install {__distribution_name__}[sqlite]') from ie

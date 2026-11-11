@@ -58,8 +58,6 @@ from .sqlmodel.asyncio import AsyncSessionMaker, make_async_engine, make_async_s
 from .starlette_admin.auth import StarletteAdminAuthProvider
 from .views.profile import ProfileView
 
-import lockss.projectoscope as __current_package__
-
 
 class Projectoscope:
     settings: ProjectoscopeSettings
@@ -140,8 +138,8 @@ class ProjectoscopeAdmin(Admin):
                          title='Projectoscope',
                          base_url='/web',
                          route_name='web',
-                         templates_dir=str(resources.files(__current_package__).joinpath('templates')),
-                         static_dir=str(resources.files(__current_package__).joinpath('static')))
+                         templates_dir=str(resources.files(__package__).joinpath('templates')),
+                         static_dir=str(resources.files(__package__).joinpath('static')))
 
     async def _find_object_or_404(self, request: Request, view: BaseModelView, key: str | None, pk: str | None, action: str) -> Any:
         if isinstance(view, ProfileView) and key == 'profile' and (action == 'detail' or action == 'edit'):
@@ -164,5 +162,7 @@ def root():
 
 
 def main() -> None:
+    from . import __distribution_name__, __version__
+    print(f'{__distribution_name__} version {__version__}')
     print(f'{ "=" * (n := 32) } DEVELOPMENT MODE { "=" * n }') # FIXME
     uvicorn.run(f'{__name__}:app', host="127.0.0.1", port=8000, reload=True) # FIXME
