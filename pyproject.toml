@@ -61,7 +61,8 @@ dependencies = [
 
 [project.optional-dependencies]
 garage = [
-    "garage-admin-sdk @ git+https://git.deuxfleurs.fr/garage-sdk/garage-admin-sdk-python.git@709b9c1317e68b9f4ea5025ef8fa9df0d2ce899c", # The latest and labeled as corresponding to Garage 2.3.0 but itself versioned 2.1.0.1
+    # The latest and labeled as corresponding to Garage 2.3.0, but itself versioned 2.1.0.1
+    "garage-admin-sdk @ git+https://git.deuxfleurs.fr/garage-sdk/garage-admin-sdk-python.git@709b9c1317e68b9f4ea5025ef8fa9df0d2ce899c",
 ]
 sqlite = [
     "aiosqlite (>=0.22.0,<0.23.0)",
