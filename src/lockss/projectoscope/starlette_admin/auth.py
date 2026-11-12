@@ -35,8 +35,8 @@ from sqlmodel import and_, or_, select
 from starlette.requests import Request
 from starlette_admin.auth import AdminUser, AuthProvider, LoginFailed
 
+from ..hq.models.users import StarletteAdminUser, User
 from ..sqlmodel.asyncio import AsyncSessionMaker
-from lockss.projectoscope.hq.models.users import StarletteAdminUser, User
 
 
 # See https://jowilf.github.io/starlette-admin/user-guide/auth/#authprovider-built-in-sign-in-page

@@ -43,7 +43,7 @@ from starlette_admin import BaseModelView
 from starlette_admin.contrib.sqlmodel import Admin
 
 from .hq.models.users import user_
-from lockss.projectoscope.profile.views.profile import ProfileView
+from .profile.views.profile import ProfileView
 
 if TYPE_CHECKING:
     from .main import Projectoscope
