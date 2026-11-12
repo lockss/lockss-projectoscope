@@ -30,12 +30,17 @@
 
 """
 Projectoscope controller for a `Garage <https://garagehq.deuxfleurs.fr/>`_ S3
-object store.
+object store. This package requires the "garage" extra.
 """
 
-from typing import TYPE_CHECKING
+#
+# REQUIRES THE garage EXTRA
+#
 
-from starlette_admin import DropDown
+from ..optional import ensure_garage
+ensure_garage()
+
+from typing import TYPE_CHECKING
 
 from ..component import Component
 from ..config import GarageComponentSettings

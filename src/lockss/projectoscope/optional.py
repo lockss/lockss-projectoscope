@@ -28,9 +28,19 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .. import __distribution_name__
+"""
+Module to test whether optional dependency groups are installed.
+"""
 
-try:
-    import aiosqlite
-except ImportError as ie:
-    raise ImportError(f'The optional dependencies for SQLite are not installed; install {__distribution_name__}[sqlite]') from ie
+from . import __distribution_name__
+
+
+def ensure_garage() -> None:
+    pass # FIXME
+
+
+def ensure_sqlite() -> None:
+    try:
+        import aiosqlite
+    except ImportError as ie:
+        raise ImportError(f'The optional dependencies for SQLite are not installed; install {__distribution_name__}[sqlite]') from ie

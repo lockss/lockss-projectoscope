@@ -28,9 +28,11 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from ..optional import ensure_sqlite
+
 def vet_database_url(database_url: str) -> str:
     if database_url.startswith('sqlite+aiosqlite://'):
-        from . import sqlite
+        ensure_sqlite()
     else:
         dialect, sep, main = database_url.partition('://')
         raise ValueError(f'Database dialect not supported: {dialect}' if sep else 'Invalid database URL')
