@@ -48,6 +48,7 @@ from .component import Component
 from .config import HqSettings, ProfileSettings, ProjectoscopeSettings, component_sort_key, GarageComponentSettings
 from .db import vet_database_url
 from .hq import HqComponent
+from .optional import ensure_garage
 from .profile import ProfileComponent
 from .sqlmodel.asyncio import AsyncSessionMaker, make_async_engine, make_async_session_maker
 from .starlette_admin.auth import StarletteAdminAuthProvider
@@ -98,6 +99,7 @@ class Projectoscope:
                 case HqSettings.TYPE:
                     HqComponent(self.settings.overseer, cast(HqSettings, settings)).set_up(self)
                 case GarageComponentSettings.TYPE:
+                    ensure_garage()
                     from .garage import GarageComponent
                     GarageComponent(self.settings.overseer, cast(GarageComponentSettings, settings)).set_up(self)
                 case _:

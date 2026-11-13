@@ -60,16 +60,19 @@ ComponentType: TypeAlias = Literal[
 
 class HqSettings(BaseComponentSettings):
     TYPE: ClassVar[Literal['hq']] = 'hq'
+    DEFAULT_TITLE: ClassVar[str] = 'Projectoscope HQ'
 
     type: Literal['hq'] = TYPE
-    title: str = 'Projectoscope HQ'
+    title: str = DEFAULT_TITLE
 
 
 class GarageComponentSettings(BaseComponentSettings):
     TYPE: ClassVar[Literal['garage']] = 'garage'
+    DEFAULT_TITLE: ClassVar[str] = 'Garage Controller'
 
     type: Literal['garage'] = TYPE
-    title: str = 'Garage Controller'
+    title: str = DEFAULT_TITLE
+    admin: HttpUrl = Field(title='Garage Admin URL')
 
 
 class ProfileSettings(BaseComponentSettings):

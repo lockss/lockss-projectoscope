@@ -36,7 +36,10 @@ from . import __distribution_name__
 
 
 def ensure_garage() -> None:
-    pass # FIXME
+    try:
+        import garage_admin_sdk
+    except ImportError as ie:
+        raise ImportError(f'The optional dependencies for Garage are not installed; install {__distribution_name__}[garage]') from ie
 
 
 def ensure_sqlite() -> None:

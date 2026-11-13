@@ -33,13 +33,6 @@ Projectoscope controller for a `Garage <https://garagehq.deuxfleurs.fr/>`_ S3
 object store. This package requires the "garage" extra.
 """
 
-#
-# REQUIRES THE garage EXTRA
-#
-
-from ..optional import ensure_garage
-ensure_garage()
-
 from typing import TYPE_CHECKING
 
 from ..component import Component
