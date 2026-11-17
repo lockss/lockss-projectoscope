@@ -68,6 +68,7 @@ class ProjectoscopeAdmin(Admin):
     def add_find_object_or_404_behavior(self, find_object_or_404_behavior: FindObjectOr404Behavior) -> None:
         self._find_object_or_404_behaviors.append(find_object_or_404_behavior)
 
+    # FIXME this is wrong, part of this is folded into profile.py
     async def _find_object_or_404(self, request: Request, view: BaseModelView, key: str | None, pk: str | None, action: str) -> Any:
         for find_object_or_404_behavior in self._find_object_or_404_behaviors:
             await find_object_or_404_behavior(self, request, view, key, pk, action)

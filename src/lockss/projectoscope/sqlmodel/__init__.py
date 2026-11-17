@@ -32,7 +32,18 @@ from types import UnionType
 from typing import Union, get_args, get_origin
 
 from sqlalchemy.types import TypeDecorator
+from sqlmodel import SQLModel
 import sqlmodel.main
+
+
+# See https://docs.sqlalchemy.org/en/21/core/constraints.html#configuring-a-naming-convention-for-a-metadata-collection
+SQLModel.metadata.naming_convention = {
+    'ix': 'ix_%(column_0_label)s',
+    'uq': 'uq_%(table_name)s_%(column_0_name)s',
+    'ck': 'ck_%(table_name)s_%(constraint_name)s',
+    'fk': 'fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s',
+    'pk': 'pk_%(table_name)s',
+}
 
 
 def add_sqlalchemy_type(target_type: type, type_decorator: type[TypeDecorator]) -> None:

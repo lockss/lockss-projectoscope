@@ -39,7 +39,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class OverseerSettings(BaseSettings):
-    model_config = SettingsConfigDict(env_file='.env')
+    model_config = SettingsConfigDict(env_file='.env',
+                                      extra='ignore')
 
     database_url: SecretStr = Field(title='Database URL')
     secret_key: SecretStr = Field(title='Secret Key')
@@ -67,12 +68,17 @@ class HqSettings(BaseComponentSettings):
 
 
 class GarageComponentSettings(BaseComponentSettings):
+    model_config = SettingsConfigDict(env_file='.env',
+                                      env_prefix='GARAGE_',
+                                      extra = 'ignore')
+
     TYPE: ClassVar[Literal['garage']] = 'garage'
     DEFAULT_TITLE: ClassVar[str] = 'Garage Controller'
 
     type: Literal['garage'] = TYPE
     title: str = DEFAULT_TITLE
     admin: HttpUrl = Field(title='Garage Admin URL')
+    admin_token: SecretStr = Field(title='Admin Token')
 
 
 class ProfileSettings(BaseComponentSettings):

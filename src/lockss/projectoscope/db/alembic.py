@@ -28,11 +28,5 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from ..hq.models.initiatives import Initiative
-from ..hq.models.organizations import Organization
-from ..hq.models.users import User
-
-from ..garage.models.access_keys import AccessKey
-from ..garage.models.buckets import Bucket
-from ..garage.models.bucket_global_aliases import BucketGlobalAlias
-from ..garage.models.bucket_access_key_links import BucketAccessKeyLink
+from ..hq.models import *
+from ..garage.models import *

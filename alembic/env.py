@@ -61,6 +61,7 @@ def run_migrations_offline() -> None:
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
         ### (added by us)
+        render_as_batch=True, # for SQLite, see https://alembic.sqlalchemy.org/en/latest/batch.html and https://alembic.sqlalchemy.org/en/latest/batch.html#batch-mode-with-autogenerate
         compare_type=True,
         ### (end)
     )
@@ -70,7 +71,14 @@ def run_migrations_offline() -> None:
 
 
 def do_run_migrations(connection: Connection) -> None:
-    context.configure(connection=connection, target_metadata=target_metadata)
+    context.configure(connection=connection,
+                      target_metadata=target_metadata,
+                      ### (added by us)
+                      render_as_batch=True,
+                      # for SQLite, see https://alembic.sqlalchemy.org/en/latest/batch.html and https://alembic.sqlalchemy.org/en/latest/batch.html#batch-mode-with-autogenerate
+                      compare_type=True,
+                      ### (end)
+                      )
 
     with context.begin_transaction():
         context.run_migrations()

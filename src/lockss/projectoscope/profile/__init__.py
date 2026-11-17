@@ -46,6 +46,7 @@ if TYPE_CHECKING:
 
 class ProfileComponent(Component[ProfileSettings]):
 
+    # FIXME staticmethod seems wrong
     @staticmethod
     async def _find_object_or_404(self, request: Request, view: BaseModelView, key: str | None, pk: str | None, action: str) -> Any:
         if isinstance(view, ProfileView) and key == 'profile' and (action == 'detail' or action == 'edit'):

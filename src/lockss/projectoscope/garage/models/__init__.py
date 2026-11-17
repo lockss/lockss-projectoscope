@@ -27,3 +27,11 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
+
+def _initialize_models() -> None:
+    from .buckets import Bucket
+    from .bucket_global_aliases import BucketGlobalAlias
+    from .access_keys import AccessKey
+    from .bucket_access_key_links import BucketAccessKeyLink
+
+_initialize_models()

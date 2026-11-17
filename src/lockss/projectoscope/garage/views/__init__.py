@@ -27,3 +27,18 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
+
+from garage_admin_sdk import ApiClient, Configuration
+
+from ...config import GarageComponentSettings
+from ...starlette_admin.view import PJSModelView
+
+
+class GarageComponentView(PJSModelView):
+    api_client_context: ApiClient
+
+    def __init__(self, garage_settings: GarageComponentSettings, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        configuration: Configuration = Configuration(host=garage_settings.admin.encoded_string().rstrip('/'),
+                                                     access_token=garage_settings.admin_token.get_secret_value())
+        self.api_client_context = ApiClient(configuration)

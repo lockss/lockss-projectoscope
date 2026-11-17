@@ -34,12 +34,14 @@ from typing import Annotated, Final, TypeAlias, TYPE_CHECKING
 from uuid import UUID, uuid4
 
 from pydantic import StringConstraints
+from starlette.requests import Request
 from sqlmodel import Field, Relationship, SQLModel
 
 from .bucket_access_key_links import BucketAccessKeyLink
 
 if TYPE_CHECKING:
     from .bucket_global_aliases import BucketGlobalAlias
+
 
 
 BUCKET_ID_LENGTH: Final[int] = 64
@@ -77,3 +79,6 @@ class Bucket(SQLModel, table=True):
     access_key_links: list[BucketAccessKeyLink] = Relationship(back_populates='bucket')
 
     global_aliases: list['BucketGlobalAlias'] = Relationship(back_populates='bucket')
+
+    def __admin_repr__(self, request: Request) -> str:
+        return f'{self.bucket_identifier}{f"{ga[0].alias}" if (ga := self.global_aliases) else ""}'

@@ -27,3 +27,10 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
+
+def _initialize_models() -> None:
+    from .initiatives import Initiative
+    from .organizations import Organization
+    from .users import User
+
+_initialize_models()

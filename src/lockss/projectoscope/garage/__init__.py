@@ -35,8 +35,12 @@ object store. This package requires the "garage" extra.
 
 from typing import TYPE_CHECKING
 
+from starlette_admin import DropDown
+
 from ..component import Component
 from ..config import GarageComponentSettings
+from .views.buckets import BucketView
+from .views.access_keys import AccessKeyView
 
 if TYPE_CHECKING:
     from ..main import Projectoscope
@@ -45,8 +49,12 @@ if TYPE_CHECKING:
 class GarageComponent(Component[GarageComponentSettings]):
 
     def set_up_admin(self, app: Projectoscope) -> None:
-        from starlette_admin import Link
-        app.admin.add_view(Link(url='#', menu_label='Garage', icon='fa-solid fa-bucket'))
+        app.admin.add_view(DropDown(self.component_settings.title,
+                                    [
+                                        BucketView(),
+                                        AccessKeyView(self.component_settings),
+                                    ],
+                                    icon='fa-solid fa-cloud-arrow-up'))
 
     def set_up_api(self, app: Projectoscope) -> None:
         pass # No API

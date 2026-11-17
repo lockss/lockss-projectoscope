@@ -28,12 +28,13 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from datetime import datetime
+from datetime import UTC, datetime
 from re import Pattern, compile as re_compile
 from typing import Annotated, ClassVar, Final, TypeAlias
 from uuid import UUID, uuid4
 
 from pydantic import SecretStr, StringConstraints
+from starlette.requests import Request
 from sqlmodel import Field, Relationship, SQLModel
 
 from ...sqlmodel import add_sqlalchemy_type
@@ -84,13 +85,17 @@ class AccessKey(SQLModel, table=True):
     __tablename__ = 'garage_access_keys'
 
     id: UUID | None = Field(default_factory=uuid4, primary_key=True, index=True, title='UUID')
-    access_key_identifier: AccessKeyId = Field(title='Access Key ID')  # known as 'access_key_id' in their definition
+    access_key_identifier: AccessKeyId | None = Field(default=None, title='Access Key ID')  # known as 'access_key_id' in their definition
     # buckets: list[KeyInfoBucketResponse] # see https://git.deuxfleurs.fr/garage-sdk/garage-admin-sdk-python/src/branch/main-v2/docs/KeyInfoBucketResponse.md
-    created: datetime | None = Field(None, title='Creation Time')
-    expiration: datetime | None = Field(None, title='Expiration Time')
+    created: datetime | None = Field(default=None, title='Creation Time (UTC)')
+    expiration: datetime | None = Field(default_factory=lambda: (now := datetime.now(UTC)).replace(year=now.year + 1), title='Expiration Time (UTC)')
     expired: bool = Field(False, title='Expired')
     name: Name = Field(title='Name')
     # permissions: KeyPerm # see https://git.deuxfleurs.fr/garage-sdk/garage-admin-sdk-python/src/branch/main-v2/docs/KeyPerm.md
     secret_access_key: SecretAccessKey | None = Field(None, title='Secret Access Key')
+    user_id: UUID | None = Field(default=None, foreign_key='users.id')
 
     bucket_links: list[BucketAccessKeyLink] = Relationship(back_populates='access_key')
+
+    def __admin_repr__(self, request: Request) -> str:
+        return f'{self.access_key_identifier} ({self.name})'
