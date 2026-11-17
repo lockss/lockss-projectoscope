@@ -43,7 +43,6 @@ from starlette_admin.auth import BaseAuthProvider
 import uvicorn
 import yaml
 
-from .admin import ProjectoscopeAdmin
 from .component import Component
 from .config import HqSettings, ProfileSettings, ProjectoscopeSettings, component_sort_key, GarageComponentSettings
 from .db import vet_database_url
@@ -51,6 +50,7 @@ from .hq import HqComponent
 from .optional import ensure_garage
 from .profile import ProfileComponent
 from .sqlmodel.asyncio import AsyncSessionMaker, make_async_engine, make_async_session_maker
+from .starlette_admin.admin import ProjectoscopeAdmin
 from .starlette_admin.auth import StarletteAdminAuthProvider
 
 

@@ -42,11 +42,11 @@ from starlette.status import HTTP_403_FORBIDDEN
 from starlette_admin import BaseModelView
 from starlette_admin.contrib.sqlmodel import Admin
 
-from .hq.models.users import user_
-from .profile.views.profile import ProfileView
+from ..hq.models.users import user_
+from ..profile.views.profile import ProfileView
 
 if TYPE_CHECKING:
-    from .main import Projectoscope
+    from lockss.projectoscope.main import Projectoscope
 
 
 FindObjectOr404Behavior: TypeAlias = Callable[['ProjectoscopeAdmin', Request, BaseModelView, str | None, str | None, str], Awaitable[Any]]
@@ -62,8 +62,8 @@ class ProjectoscopeAdmin(Admin):
                          title='Projectoscope',
                          base_url='/web',
                          route_name='web',
-                         templates_dir=str(resources.files(__package__).joinpath('templates')),
-                         static_dir=str(resources.files(__package__).joinpath('static')))
+                         templates_dir=str(resources.files(__package__).joinpath('../templates')),
+                         static_dir=str(resources.files(__package__).joinpath('../static')))
 
     def add_find_object_or_404_behavior(self, find_object_or_404_behavior: FindObjectOr404Behavior) -> None:
         self._find_object_or_404_behaviors.append(find_object_or_404_behavior)

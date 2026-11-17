@@ -35,7 +35,7 @@ from boltons.strutils import unit_len
 from starlette.requests import Request
 from starlette_admin import ActionSelection, BaseField, ComputedField, RequestAction, action, flash
 
-from . import PJSModelView, COMPUTED_FIELD_ACTIONS, NON_COMPUTED_FIELD_ACTIONS
+from ...starlette_admin.view import PJSModelView, COMPUTED_FIELD_ACTIONS, NON_COMPUTED_FIELD_ACTIONS
 from ..models.users import User, user_, BCRYPT_HASH_LENGTH
 
 

@@ -37,7 +37,7 @@ from starlette_admin.exceptions import FormValidationError
 from starlette_admin.filters import FilterRegistry
 
 from ...hq.models.users import User, user_
-from ...hq.views import PJSModelView, gray, COMPUTED_FIELD_ACTIONS, NON_COMPUTED_FIELD_ACTIONS
+from ...starlette_admin.view import PJSModelView, gray, COMPUTED_FIELD_ACTIONS, NON_COMPUTED_FIELD_ACTIONS
 
 
 class ProfileView(PJSModelView):

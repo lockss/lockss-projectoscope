@@ -31,7 +31,7 @@
 from starlette.requests import Request
 from starlette_admin.fields import HasMany
 
-from . import PJSModelView
+from ...starlette_admin.view import PJSModelView
 from ..models.initiatives import Initiative
 from ..models.users import user_
 

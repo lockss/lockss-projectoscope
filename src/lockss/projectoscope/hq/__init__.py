@@ -37,7 +37,7 @@ from typing import TYPE_CHECKING
 from starlette_admin import DropDown
 
 from ..component import Component
-from ..config import HqSettings, OverseerSettings
+from ..config import HqSettings
 from .views.initiatives import InitiativeView
 from .views.organizations import OrganizationView
 from .views.users import UserView
