@@ -34,8 +34,8 @@ from uuid import UUID
 from sqlmodel import Field, Relationship, SQLModel
 
 if TYPE_CHECKING:
-    from .access_key import AccessKey
-    from .bucket import Bucket
+    from .access_keys import AccessKey
+    from .buckets import Bucket
 
 
 class BucketAccessKeyLink(SQLModel, table=True):

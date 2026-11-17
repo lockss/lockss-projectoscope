@@ -34,7 +34,7 @@ from uuid import UUID, uuid4
 from pydantic import ConfigDict, StringConstraints
 from sqlmodel import Field, Relationship, SQLModel
 
-from .bucket import Bucket
+from .buckets import Bucket
 
 
 # See https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html

@@ -32,7 +32,7 @@ from ..hq.models.initiatives import Initiative
 from ..hq.models.organizations import Organization
 from ..hq.models.users import User
 
-from ..garage.models.access_key import AccessKey
-from ..garage.models.bucket import Bucket
-from ..garage.models.bucket_global_alias import BucketGlobalAlias
-from ..garage.models.bucket_access_key_link import BucketAccessKeyLink
+from ..garage.models.access_keys import AccessKey
+from ..garage.models.buckets import Bucket
+from ..garage.models.bucket_global_aliases import BucketGlobalAlias
+from ..garage.models.bucket_access_key_links import BucketAccessKeyLink

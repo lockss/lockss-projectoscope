@@ -38,7 +38,7 @@ from sqlmodel import Field, Relationship, SQLModel
 
 from ...sqlmodel import add_sqlalchemy_type
 from ...sqlmodel.secret_string import SecretStrType, SecretStringConstraints
-from .bucket_access_key_link import BucketAccessKeyLink
+from .bucket_access_key_links import BucketAccessKeyLink
 
 
 ACCESS_KEY_ID_LENGTH: Final[int] = 26

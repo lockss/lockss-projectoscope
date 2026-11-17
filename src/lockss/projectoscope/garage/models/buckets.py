@@ -36,10 +36,10 @@ from uuid import UUID, uuid4
 from pydantic import StringConstraints
 from sqlmodel import Field, Relationship, SQLModel
 
-from .bucket_access_key_link import BucketAccessKeyLink
+from .bucket_access_key_links import BucketAccessKeyLink
 
 if TYPE_CHECKING:
-    from .bucket_global_alias import BucketGlobalAlias
+    from .bucket_global_aliases import BucketGlobalAlias
 
 
 BUCKET_ID_LENGTH: Final[int] = 64
