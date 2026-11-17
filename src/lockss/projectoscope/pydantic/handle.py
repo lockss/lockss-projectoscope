@@ -40,7 +40,7 @@ HANDLE_MAX_LENGTH: Final[int] = 20
 HANDLE_MIN_LENGTH: Final[int] = 1
 
 
-HANDLE_RE: Final[Pattern] = compile(r'^[-_a-z0-9]{' + str(HANDLE_MIN_LENGTH) +  ',' + str(HANDLE_MAX_LENGTH) + r'}$')
+HANDLE_PATTERN: Final[Pattern] = compile(r'^[-_a-z0-9]{' + str(HANDLE_MIN_LENGTH) + ',' + str(HANDLE_MAX_LENGTH) + r'}$')
 
 
-Handle: TypeAlias = Annotated[str, StringConstraints(min_length=HANDLE_MIN_LENGTH, max_length=HANDLE_MAX_LENGTH, pattern=HANDLE_RE)]
+HandleT: TypeAlias = Annotated[str, StringConstraints(min_length=HANDLE_MIN_LENGTH, max_length=HANDLE_MAX_LENGTH, pattern=HANDLE_PATTERN)]

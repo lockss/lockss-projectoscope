@@ -28,33 +28,37 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from typing import ClassVar, TYPE_CHECKING
+from typing import Annotated, Final, TypeAlias, TYPE_CHECKING
 from uuid import UUID, uuid4
 
+from pydantic import StringConstraints
 from sqlmodel import Field, Relationship, SQLModel
 from starlette.requests import Request
 
-from ...pydantic.abbreviation import Abbreviation
-from ...pydantic.handle import Handle
+from ...pydantic.abbreviation import AbbreviationT
+from ...pydantic.handle import HandleT
 from .initiatives import Initiative
 
 if TYPE_CHECKING:
     from .users import User
 
 
+NAME_LENGTH: Final[int] = 60
+
+
+OrganizationNameT: TypeAlias = Annotated[str, StringConstraints(min_length=1, max_length=NAME_LENGTH)]
+
+
 class Organization(SQLModel, table=True):
-
-    NAME_LENGTH: ClassVar[int] = 60
-
     __tablename__ = 'organizations'
 
     id: UUID | None = Field(default_factory=uuid4, primary_key=True, index=True, title='UUID')
+    handle: HandleT = Field(unique=True, index=True, title='Organization Handle')
+    name: OrganizationNameT = Field(title='Name')
+    short_name: AbbreviationT | None = Field(unique=True, title='Short Name')
 
     initiative_id: UUID | None = Field(default=None, foreign_key='initiatives.id')
     initiative: Initiative | None = Relationship(back_populates='organizations')
-    handle: Handle = Field(unique=True, index=True, title='Organization Handle')
-    name: str = Field(min_length=1, max_length=NAME_LENGTH, title='Name')
-    short_name: Abbreviation | None = Field(unique=True, title='Short Name')
 
     users: list['User'] = Relationship(back_populates='organization')
 

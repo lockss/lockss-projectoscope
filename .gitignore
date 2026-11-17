@@ -1,4 +1,4 @@
-# Configuraation assets
+# Configuration assets
 /.env*
 /config/
 
@@ -19,3 +19,5 @@
 /.idea/
 /src/lockss/__init__.py
 
+# Local development
+/alembic/versions.bak

@@ -28,29 +28,33 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from typing import ClassVar, TYPE_CHECKING
+from typing import Annotated, Final, TypeAlias, TYPE_CHECKING
 from uuid import UUID, uuid4
 
+from pydantic import StringConstraints
 from sqlmodel import Field, Relationship, SQLModel
 from starlette.requests import Request
 
-from ...pydantic.abbreviation import Abbreviation
-from ...pydantic.handle import Handle
+from ...pydantic.abbreviation import AbbreviationT
+from ...pydantic.handle import HandleT
 
 if TYPE_CHECKING:
     from .organizations import Organization
 
 
+NAME_LENGTH: Final[int] = 60
+
+
+InitiativeNameT: TypeAlias = Annotated[str, StringConstraints(min_length=1, max_length=NAME_LENGTH)]
+
+
 class Initiative(SQLModel, table=True):
-
-    NAME_LENGTH: ClassVar[int] = 60
-
     __tablename__ = 'initiatives'
 
     id: UUID | None = Field(default_factory=uuid4, primary_key=True, index=True, title='UUID')
-    handle: Handle = Field(unique=True, index=True, title='Initiative Handle')
-    name: str = Field(min_length=1, max_length=NAME_LENGTH, title='Name')
-    short_name: Abbreviation | None = Field(unique=True, title='Short Name')
+    handle: HandleT = Field(unique=True, index=True, title='Initiative Handle')
+    name: InitiativeNameT = Field(title='Name')
+    short_name: AbbreviationT | None = Field(default=None, unique=True, title='Short Name')
 
     organizations: list['Organization'] = Relationship(back_populates='initiative')
 

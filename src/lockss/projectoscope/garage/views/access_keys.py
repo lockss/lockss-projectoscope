@@ -32,7 +32,6 @@ from datetime import UTC
 from typing import Any, cast
 
 from garage_admin_sdk import AccessKeyApi, GetKeyInfoResponse, UpdateKeyRequestBody
-from pydantic import SecretStr
 from sqlalchemy import Select
 from sqlmodel import and_
 from starlette.requests import Request
@@ -87,7 +86,7 @@ class AccessKeyView(GarageComponentView):
                                                               expiration=access_key.expiration,
                                                               neverExpires=access_key.expiration is None)
             resp: GetKeyInfoResponse = api_instance.create_key(body)
-        access_key.access_key_identifier = SecretStr(resp.access_key_id)
+        access_key.access_key_identifier = resp.access_key_id
         access_key.created = resp.created
         access_key.expired = resp.expired
         access_key.user_id = user_(request).id

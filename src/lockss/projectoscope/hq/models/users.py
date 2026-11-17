@@ -29,16 +29,16 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import bcrypt
-from typing import ClassVar, Final, Self
+from typing import Annotated, Final, Self, TypeAlias
 from uuid import UUID, uuid4
 
-from pydantic import EmailStr, ModelWrapValidatorHandler, model_validator
+from pydantic import EmailStr, ModelWrapValidatorHandler, StringConstraints, model_validator
 from sqlmodel import Field, Relationship, SQLModel
 from starlette.requests import Request
 from starlette_admin.auth import AdminUser
 
 from ...pydantic.errors import make_field_error
-from ...pydantic.handle import Handle
+from ...pydantic.handle import HandleT
 from .organizations import Organization
 
 
@@ -48,21 +48,27 @@ BCRYPT_HASH_LENGTH: Final[int] = 60
 BCRYPT_MAX_BYTES: Final[int] = 72
 
 
+NAME_LENGTH: Final[int] = 60
+
+
+NameT: TypeAlias = Annotated[str, StringConstraints(min_length=1, max_length=NAME_LENGTH)]
+
+
+EMAIL_LENGTH: Final[int] = 60
+
+
+EmailT: TypeAlias = Annotated[EmailStr, StringConstraints(max_length=EMAIL_LENGTH)]
+
+
 class User(SQLModel, table=True):
-
-    NAME_LENGTH: ClassVar[int] = 60
-    FIRST_NAME_LENGTH: ClassVar[int] = NAME_LENGTH
-    LAST_NAME_LENGTH: ClassVar[int] = NAME_LENGTH
-    EMAIL_LENGTH: ClassVar[int] = 60
-
     __tablename__ = 'users'
 
     id: UUID | None = Field(default_factory=uuid4, primary_key=True, index=True, title='UUID')
-    hashed_password: str = Field(nullable=False, min_length=BCRYPT_HASH_LENGTH, max_length=BCRYPT_HASH_LENGTH, repr=False)
-    handle: Handle = Field(unique=True, index=True, title='User Handle')
-    first_name: str = Field(min_length=1, max_length=FIRST_NAME_LENGTH, title='First Name')
-    last_name: str = Field(min_length=1, max_length=LAST_NAME_LENGTH, title='Last Name')
-    email: EmailStr = Field(unique=True, index=True, max_length=EMAIL_LENGTH, title='E-mail')
+    hashed_password: Annotated[str, StringConstraints(min_length=BCRYPT_HASH_LENGTH, max_length=BCRYPT_HASH_LENGTH)] = Field(repr=False)
+    handle: HandleT = Field(unique=True, index=True, title='User Handle')
+    first_name: NameT = Field(title='First Name')
+    last_name: NameT = Field(title='Last Name')
+    email: EmailT = Field(unique=True, index=True, title='E-mail')
     active: bool = Field(default=True, title='Active')
     admin: bool = Field(default=False, title='Administrator')
     superuser: bool = Field(default=False, title='Superuser')

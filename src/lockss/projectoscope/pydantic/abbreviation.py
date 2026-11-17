@@ -36,4 +36,4 @@ from pydantic import StringConstraints
 ABBREVIATION_LENGTH: Final[int] = 20
 
 
-Abbreviation: TypeAlias = Annotated[str, StringConstraints(max_length=ABBREVIATION_LENGTH)]
+AbbreviationT: TypeAlias = Annotated[str, StringConstraints(max_length=ABBREVIATION_LENGTH)]
