@@ -33,11 +33,14 @@ A type that combines Pydantic's SecretStr with StringConstraints that can be
 picked up by Alembic (which benefits from Alembic)
 """
 
+from re import Pattern
 from typing import Annotated
 
 from pydantic import SecretStr, StringConstraints
 from sqlalchemy.types import String, TypeDecorator
 from sqlmodel import Field
+
+from . import add_sqlalchemy_type
 
 
 class SecretStrType(TypeDecorator):
@@ -63,8 +66,10 @@ class SecretStrType(TypeDecorator):
 def SecretStringConstraints(*,
                             min_length: int | None = None,
                             max_length: int | None = None,
-                            pattern: str | None = None):
+                            pattern: str | Pattern[str] | None = None):
     return Annotated[StringConstraints(min_length=min_length,
                                        max_length=max_length,
                                        pattern=pattern),
                      Field(sa_type=SecretStrType(length=max_length))]
+
+add_sqlalchemy_type(SecretStr, SecretStrType)

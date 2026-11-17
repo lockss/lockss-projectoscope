@@ -11,6 +11,7 @@ from alembic import op
 import sqlalchemy as sa
 <%doc>(added by us)</%doc>
 import sqlmodel
+import lockss.projectoscope.sqlmodel.secret_string
 <%doc>(end)</%doc>
 ${imports if imports else ""}
 

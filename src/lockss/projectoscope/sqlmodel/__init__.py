@@ -27,3 +27,20 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
+
+from types import UnionType
+from typing import Union, get_args, get_origin
+
+from sqlalchemy.types import TypeDecorator
+import sqlmodel.main
+
+
+def add_sqlalchemy_type(target_type: type, type_decorator: type[TypeDecorator]) -> None:
+    _original_get_sqlalchemy_type = sqlmodel.main.get_sqlalchemy_type
+    def _custom_get_sqlalchemy_type(field: sqlmodel.main.FieldInfo):
+        annotation = getattr(field, "annotation", None)
+        origin = get_origin(annotation)
+        if annotation is target_type or ((origin is Union or origin is UnionType) and target_type in get_args(annotation)):
+            return type_decorator
+        return _original_get_sqlalchemy_type(field)
+    sqlmodel.main.get_sqlalchemy_type = _custom_get_sqlalchemy_type

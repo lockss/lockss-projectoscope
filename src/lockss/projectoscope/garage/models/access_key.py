@@ -29,19 +29,22 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from datetime import datetime
+from re import Pattern, compile as re_compile
 from typing import Annotated, ClassVar, Final, TypeAlias
 from uuid import UUID, uuid4
 
 from pydantic import SecretStr, StringConstraints
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field, Relationship, SQLModel
 
-from ...sqlmodel.secret_string import SecretStringConstraints
+from ...sqlmodel import add_sqlalchemy_type
+from ...sqlmodel.secret_string import SecretStrType, SecretStringConstraints
+from .bucket_access_key_link import BucketAccessKeyLink
 
 
 ACCESS_KEY_ID_LENGTH: Final[int] = 26
 
 
-ACCESS_KEY_ID_PATTERN: Final[str] = r'^GK[0-9a-f]{' + str(ACCESS_KEY_ID_LENGTH - 2) + r'}$'  # Case-sensitive
+ACCESS_KEY_ID_PATTERN: Final[Pattern[str]] = re_compile(r'^GK[0-9a-f]{' + str(ACCESS_KEY_ID_LENGTH - 2) + r'}$') # Case-sensitive
 
 
 AccessKeyId: TypeAlias = Annotated[SecretStr,
@@ -50,16 +53,22 @@ AccessKeyId: TypeAlias = Annotated[SecretStr,
                                                            pattern=ACCESS_KEY_ID_PATTERN)]
 
 
+add_sqlalchemy_type(AccessKeyId, SecretStrType)
+
+
 SECRET_ACCESS_KEY_LENGTH: Final[int] = 64
 
 
-SECRET_ACCESS_KEY_PATTERN: Final[str] = r'^[0-9a-f]{' + str(SECRET_ACCESS_KEY_LENGTH) + r'}$'  # Case-sensitive
+SECRET_ACCESS_KEY_PATTERN: Final[Pattern[str]] = re_compile(r'^[0-9a-f]{' + str(SECRET_ACCESS_KEY_LENGTH) + r'}$') # Case-sensitive
 
 
 SecretAccessKey: TypeAlias = Annotated[SecretStr,
                                        SecretStringConstraints(min_length=SECRET_ACCESS_KEY_LENGTH,
                                                                max_length=SECRET_ACCESS_KEY_LENGTH,
                                                                pattern=SECRET_ACCESS_KEY_PATTERN)]
+
+
+add_sqlalchemy_type(SecretAccessKey, SecretStrType)
 
 
 NAME_LENGTH: Final[int] = 60
@@ -75,11 +84,13 @@ class AccessKey(SQLModel, table=True):
     __tablename__ = 'garage_access_keys'
 
     id: UUID | None = Field(default_factory=uuid4, primary_key=True, index=True, title='UUID')
-    access_key_id: AccessKeyId = Field(title='Access Key ID')
+    access_key_identifier: AccessKeyId = Field(title='Access Key ID')  # known as 'access_key_id' in their definition
     # buckets: list[KeyInfoBucketResponse] # see https://git.deuxfleurs.fr/garage-sdk/garage-admin-sdk-python/src/branch/main-v2/docs/KeyInfoBucketResponse.md
     created: datetime | None = Field(None, title='Creation Time')
     expiration: datetime | None = Field(None, title='Expiration Time')
     expired: bool = Field(False, title='Expired')
     name: Name = Field(title='Name')
-    permissions_create_bucket: bool = Field(False, title='Create Bucket Permission')
+    # permissions: KeyPerm # see https://git.deuxfleurs.fr/garage-sdk/garage-admin-sdk-python/src/branch/main-v2/docs/KeyPerm.md
     secret_access_key: SecretAccessKey | None = Field(None, title='Secret Access Key')
+
+    bucket_links: list[BucketAccessKeyLink] = Relationship(back_populates='access_key')
