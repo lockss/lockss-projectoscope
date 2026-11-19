@@ -60,7 +60,6 @@ class BucketView(GarageComponentView):
                     label=Bucket.model_fields['bucket_identifier'].title),
         StringField('global_alias',
                     label=Bucket.model_fields['global_alias'].title),
-        HasMany(),
         DateTimeField('created',
                       output_format=DATETIME_FORMAT,
                       label=(crd := Bucket.model_fields['created']).title,
