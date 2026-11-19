@@ -30,7 +30,6 @@
 
 def _initialize_models() -> None:
     from .buckets import Bucket
-    from .bucket_global_aliases import BucketGlobalAlias
     from .access_keys import AccessKey
     from .bucket_access_key_links import BucketAccessKeyLink
 

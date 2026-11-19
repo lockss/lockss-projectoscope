@@ -81,4 +81,4 @@ class AccessKey(SQLModel, table=True):
 
     @staticmethod
     def generate_name(user: User) -> AccessKeyNameT:
-        return f'uk_{user.handle}_{randrange(100000):05d}' # max length: 29
+        return f'uk-{user.handle}-{randrange(100000):05d}' # max length: 29

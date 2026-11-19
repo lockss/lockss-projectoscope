@@ -52,7 +52,7 @@ class GarageComponent(Component[GarageComponentSettings]):
         app.admin.add_view(DropDown(self.component_settings.title,
                                     [
                                         AccessKeyView(self.component_settings),
-                                        BucketView(),
+                                        BucketView(self.component_settings),
                                     ],
                                     icon='fa-solid fa-cloud-arrow-up'))
 

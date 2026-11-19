@@ -28,12 +28,14 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from random import randrange
 from typing import Annotated, Final, TypeAlias
 from uuid import UUID, uuid4
 
 from pydantic import ConfigDict, StringConstraints
 from sqlmodel import Field, Relationship, SQLModel
 
+from ...hq.models.users import User
 from .buckets import Bucket
 
 
@@ -57,10 +59,10 @@ BUCKET_NAME_MAX_LENGTH: Final[int] = 63
 BUCKET_NAME_REGEX: Final[str] = r'(?!(^(?:xn--|sthree-|amzn-s3-demo-)|.+(?:-s3alias|--ol-s3|.mrap|--x-s3|--table-s3|-an)$))^[a-z0-9][a-z0-9-]{1,' + str(BUCKET_NAME_MAX_LENGTH - 2) + r'}[a-z0-9]$'
 
 
-BucketName: TypeAlias = Annotated[str,
-                                  StringConstraints(min_length=BUCKET_NAME_MIN_LENGTH,
-                                                    max_length=BUCKET_NAME_MAX_LENGTH,
-                                                    pattern=BUCKET_NAME_REGEX)]
+BucketNameT: TypeAlias = Annotated[str,
+                                   StringConstraints(min_length=BUCKET_NAME_MIN_LENGTH,
+                                                     max_length=BUCKET_NAME_MAX_LENGTH,
+                                                     pattern=BUCKET_NAME_REGEX)]
 
 
 class BucketGlobalAlias(SQLModel, table=True):
@@ -69,7 +71,11 @@ class BucketGlobalAlias(SQLModel, table=True):
     __tablename__ = 'garage_bucket_global_aliases'
 
     id: UUID | None = Field(default_factory=uuid4, primary_key=True, index=True, title='UUID')
-    alias: BucketName = Field(title='Global Alias')
+    alias: BucketNameT = Field(title='Global Alias')
 
     bucket_id: UUID | None = Field(default=None, foreign_key='garage_buckets.id')
     bucket: Bucket | None = Relationship(back_populates='global_aliases')
+
+    @staticmethod
+    def generate_alias(user: User) -> BucketNameT:
+        return f'ub_{user.handle}_{randrange(100000):05d}' # max length: 29

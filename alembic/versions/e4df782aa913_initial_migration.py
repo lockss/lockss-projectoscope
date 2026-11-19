@@ -1,8 +1,8 @@
-"""Initial revision
+"""Initial migration
 
-Revision ID: 3e3553149aff
+Revision ID: e4df782aa913
 Revises: 
-Create Date: 2026-11-17 21:25:15.694340+00:00
+Create Date: 2026-11-19 09:21:27.772613+00:00
 
 """
 from typing import Sequence, Union
@@ -16,7 +16,7 @@ import lockss.projectoscope.sqlmodel.secret_string
 
 
 # revision identifiers, used by Alembic.
-revision: str = '3e3553149aff'
+revision: str = 'e4df782aa913'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -33,6 +33,7 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('short_name')
     )
+
     with op.batch_alter_table('initiatives', schema=None) as batch_op:
         batch_op.create_index(batch_op.f('ix_initiatives_handle'), ['handle'], unique=True)
         batch_op.create_index(batch_op.f('ix_initiatives_id'), ['id'], unique=False)
@@ -47,6 +48,7 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('short_name')
     )
+
     with op.batch_alter_table('organizations', schema=None) as batch_op:
         batch_op.create_index(batch_op.f('ix_organizations_handle'), ['handle'], unique=True)
         batch_op.create_index(batch_op.f('ix_organizations_id'), ['id'], unique=False)
@@ -65,29 +67,11 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['organization_id'], ['organizations.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
+
     with op.batch_alter_table('users', schema=None) as batch_op:
         batch_op.create_index(batch_op.f('ix_users_email'), ['email'], unique=True)
         batch_op.create_index(batch_op.f('ix_users_handle'), ['handle'], unique=True)
         batch_op.create_index(batch_op.f('ix_users_id'), ['id'], unique=False)
-
-    op.create_table('garage_buckets',
-    sa.Column('id', sa.Uuid(), nullable=False),
-    sa.Column('bucket_identifier', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-    sa.Column('created', sqlmodel.sql.sqltypes.UTCDateTime(), nullable=True),
-    sa.PrimaryKeyConstraint('id')
-    )
-    with op.batch_alter_table('garage_buckets', schema=None) as batch_op:
-        batch_op.create_index(batch_op.f('ix_garage_buckets_id'), ['id'], unique=False)
-
-    op.create_table('garage_bucket_global_aliases',
-    sa.Column('id', sa.Uuid(), nullable=False),
-    sa.Column('alias', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-    sa.Column('bucket_id', sa.Uuid(), nullable=True),
-    sa.ForeignKeyConstraint(['bucket_id'], ['garage_buckets.id'], ),
-    sa.PrimaryKeyConstraint('id')
-    )
-    with op.batch_alter_table('garage_bucket_global_aliases', schema=None) as batch_op:
-        batch_op.create_index(batch_op.f('ix_garage_bucket_global_aliases_id'), ['id'], unique=False)
 
     op.create_table('garage_access_keys',
     sa.Column('id', sa.Uuid(), nullable=False),
@@ -95,13 +79,25 @@ def upgrade() -> None:
     sa.Column('created', sqlmodel.sql.sqltypes.UTCDateTime(), nullable=True),
     sa.Column('expiration', sqlmodel.sql.sqltypes.UTCDateTime(), nullable=True),
     sa.Column('expired', sa.Boolean(), nullable=False),
-    sa.Column('name', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+    sa.Column('name', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     sa.Column('user_id', sa.Uuid(), nullable=True),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
+
     with op.batch_alter_table('garage_access_keys', schema=None) as batch_op:
         batch_op.create_index(batch_op.f('ix_garage_access_keys_id'), ['id'], unique=False)
+
+    op.create_table('garage_buckets',
+    sa.Column('id', sa.Uuid(), nullable=False),
+    sa.Column('bucket_identifier', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+    sa.Column('created', sqlmodel.sql.sqltypes.UTCDateTime(), nullable=True),
+    sa.Column('global_alias', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+    sa.PrimaryKeyConstraint('id')
+    )
+
+    with op.batch_alter_table('garage_buckets', schema=None) as batch_op:
+        batch_op.create_index(batch_op.f('ix_garage_buckets_id'), ['id'], unique=False)
 
     op.create_table('garage_bucket_access_key_links',
     sa.Column('bucket_id', sa.Uuid(), nullable=False),
@@ -128,11 +124,6 @@ def downgrade() -> None:
         batch_op.drop_index(batch_op.f('ix_users_handle'))
         batch_op.drop_index(batch_op.f('ix_users_email'))
 
-    op.drop_table('garage_bucket_global_aliases')
-    with op.batch_alter_table('initiatives', schema=None) as batch_op:
-        batch_op.drop_index(batch_op.f('ix_initiatives_id'))
-        batch_op.drop_index(batch_op.f('ix_initiatives_handle'))
-
     op.drop_table('garage_buckets')
 
     op.drop_table('users')
@@ -141,8 +132,9 @@ def downgrade() -> None:
         batch_op.drop_index(batch_op.f('ix_organizations_handle'))
 
     op.drop_table('organizations')
-    with op.batch_alter_table('garage_bucket_global_aliases', schema=None) as batch_op:
-        batch_op.drop_index(batch_op.f('ix_garage_bucket_global_aliases_id'))
+    with op.batch_alter_table('initiatives', schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f('ix_initiatives_id'))
+        batch_op.drop_index(batch_op.f('ix_initiatives_handle'))
 
     op.drop_table('initiatives')
     with op.batch_alter_table('garage_buckets', schema=None) as batch_op:

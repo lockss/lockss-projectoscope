@@ -28,25 +28,59 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from typing import Sequence, Any
+from collections.abc import Sequence
+from dataclasses import replace
+from typing import Any, ClassVar, cast
 
+from garage_admin_sdk import BucketApi, CreateBucketRequest, GetBucketInfoResponse
+from sqlalchemy import Select, func
+from sqlmodel import and_
 from starlette.requests import Request
+from starlette_admin import BaseField, DateTimeField, HasMany, RelationField, RequestAction, StringField, UUIDField
 
-from ...hq.models.users import user_
-from ...starlette_admin.view import PJSModelView
+from ...config import GarageComponentSettings
+from ...hq.models.users import User, user_
+from ..models.access_keys import AccessKey
+from ..models.bucket_access_key_links import BucketAccessKeyLink
 from ..models.buckets import Bucket
+from . import GarageComponentView
 
 
-class BucketView(PJSModelView):
+class BucketView(GarageComponentView):
+    DATETIME_FORMAT: ClassVar[str] = '%Y-%m-%d %H:%M:%S'
+
     icon = 'fa-solid fa-bucket'
 
-    fields = ['id', 'bucket_identifier']
+    fields = [
+        UUIDField('id',
+                  version=4,
+                  label=Bucket.model_fields['id'].title),
+        StringField('bucket_identifier',
+                    copy_to_clipboard=True,
+                    label=Bucket.model_fields['bucket_identifier'].title),
+        StringField('global_alias',
+                    label=Bucket.model_fields['global_alias'].title),
+        HasMany(),
+        DateTimeField('created',
+                      output_format=DATETIME_FORMAT,
+                      label=(crd := Bucket.model_fields['created']).title,
+                      help_text=crd.description),
+    ]
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(Bucket, *args, **kwargs)
+    exclude_fields_from_create = ['bucket_identifier', 'global_alias', 'created']
 
-    def title(self, request: Request) -> str:
-        return 'My Access Keys'
+    exclude_fields_from_detail = []
+
+    exclude_fields_from_edit = []
+
+    _non_editable_fields = ['bucket_identifier', 'global_alias', 'created']
+
+    exclude_fields_from_export = []
+
+    exclude_fields_from_list = ['id', 'created']
+
+    def __init__(self, garage_settings: GarageComponentSettings, *args, **kwargs) -> None:
+        super().__init__(garage_settings, Bucket, *args, **kwargs)
 
     def is_accessible(self, request: Request) -> bool:
         return user_(request).active
@@ -56,3 +90,40 @@ class BucketView(PJSModelView):
 
     def can_import(self, request: Request) -> bool:
         return False
+
+    def get_list_query(self, request: Request) -> Select:
+        if (user := user_(request)).admin:
+            return super().get_list_query(request)
+        else:
+            return Select(Bucket, BucketAccessKeyLink, AccessKey).where(and_(Bucket.id == BucketAccessKeyLink.bucket_id, BucketAccessKeyLink.access_key_id == AccessKey.id, AccessKey.user_id == user.id))
+
+    def get_count_query(self, request: Request) -> Select:
+        if (user := user_(request)).admin:
+            return super().get_count_query(request)
+        else:
+            return Select(func.count()).select_from(Bucket, BucketAccessKeyLink, AccessKey).where(and_(Bucket.id == BucketAccessKeyLink.bucket_id, BucketAccessKeyLink.access_key_id == AccessKey.id, AccessKey.user_id == user.id))
+
+    def can_access_field(self, request: Request, field: BaseField, action: RequestAction | None = None) -> bool:
+        return super().can_access_field(request, field, action=action)
+
+    def get_fields_list(self, request: Request, *, include_nested: bool = False, action: RequestAction | None = None) -> Sequence[BaseField]:
+        ret: list[BaseField] = [*super().get_fields_list(request, include_nested=include_nested, action=action)]
+        match action:
+            case RequestAction.EDIT | RequestAction.INLINE_EDIT | None: # FIXME unknown if None has bad side effects here
+                ret = [replace(field, read_only=True, disabled=True) if field.name in self._non_editable_fields else field for field in ret]
+                for field in ret:
+                    if isinstance(field, RelationField) and field._view is None:
+                        field._view = self
+        return ret
+
+    async def before_create(self, request: Request, data: dict[str, Any], obj: Any) -> None:
+        bucket: Bucket = cast(Bucket, obj)
+        user: User = user_(request)
+        bucket.global_alias = Bucket.generate_global_alias(user)
+        with self.api_client_context as api_client:
+            # FIXME requires try/except
+            api_instance: BucketApi = BucketApi(api_client)
+            cbr: CreateBucketRequest = CreateBucketRequest(globalAlias=bucket.global_alias)
+            resp: GetBucketInfoResponse = api_instance.create_bucket(cbr)
+        bucket.bucket_identifier = resp.id
+        bucket.created = resp.created
