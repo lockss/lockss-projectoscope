@@ -44,6 +44,10 @@ class ProfileView(PJSModelView):
     key = 'profile'
     menu_label = 'Profile'
     icon = 'fa-solid fa-user'
+    _can_create = False
+    _can_delete = False
+    _can_export = False
+    _can_import = False
 
     # Undo PJSModelView
     show_goto_page = False
@@ -76,20 +80,8 @@ class ProfileView(PJSModelView):
                 return action.name == RequestAction.EDIT
         return super().can_access_field(request, field, action=action)
 
-    def can_create(self, request: Request) -> bool:
-        return False
-
-    def can_delete(self, request: Request) -> bool:
-        return False
-
     def can_edit(self, request: Request) -> bool:
         return (pk := request.query_params.get('pk')) is None or pk == str(user_(request).id) # FIXME pk:str/pk:UUID inconsistencies
-
-    def can_export(self, request: Request) -> bool:
-        return False
-
-    def can_import(self, request: Request) -> bool:
-        return False
 
     def can_view_detail(self, request: Request) -> bool:
         return (pk := request.query_params.get('pk')) is None or pk == str(user_(request).id) # FIXME pk:str/pk:UUID inconsistencies

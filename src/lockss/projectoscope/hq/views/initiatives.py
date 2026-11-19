@@ -39,6 +39,8 @@ from ..models.users import user_
 class InitiativeView(PJSModelView):
 
     icon = 'fa-solid fa-briefcase'
+    _can_delete = False
+    _can_import = False
     fields = ['id', 'handle', 'name', 'short_name', HasMany('organizations', key='organization')]
     exclude_fields_from_list = ['id', 'organizations']
     fields_default_sort = ['name']
@@ -49,9 +51,3 @@ class InitiativeView(PJSModelView):
 
     def is_accessible(self, request: Request) -> bool:
         return (u := user_(request)).active and u.admin
-
-    def can_delete(self, request: Request) -> bool:
-        return False
-
-    def can_import(self, request: Request) -> bool:
-        return False

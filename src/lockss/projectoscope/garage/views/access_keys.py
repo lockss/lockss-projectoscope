@@ -51,6 +51,7 @@ class AccessKeyView(GarageComponentView):
     DATETIME_FORMAT: ClassVar[str] = '%Y-%m-%d %H:%M:%S'
 
     icon = 'fa-solid fa-key'
+    _can_import = False
 
     fields = [
         UUIDField('id',
@@ -97,9 +98,6 @@ class AccessKeyView(GarageComponentView):
 
     def is_accessible(self, request: Request) -> bool:
         return user_(request).active
-
-    def can_import(self, request: Request) -> bool:
-        return False
 
     def get_list_query(self, request: Request) -> Select:
         select: Select = super().get_list_query(request)

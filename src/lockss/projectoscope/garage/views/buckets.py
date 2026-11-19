@@ -50,6 +50,8 @@ class BucketView(GarageComponentView):
     DATETIME_FORMAT: ClassVar[str] = '%Y-%m-%d %H:%M:%S'
 
     icon = 'fa-solid fa-bucket'
+    _can_delete = False
+    _can_import = False
 
     fields = [
         UUIDField('id',
@@ -83,12 +85,6 @@ class BucketView(GarageComponentView):
 
     def is_accessible(self, request: Request) -> bool:
         return user_(request).active
-
-    def can_delete(self, request: Request) -> bool:
-        return False
-
-    def can_import(self, request: Request) -> bool:
-        return False
 
     def get_list_query(self, request: Request) -> Select:
         if (user := user_(request)).admin:

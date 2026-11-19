@@ -42,6 +42,9 @@ from ..models.users import User, user_, BCRYPT_HASH_LENGTH
 class UserView(PJSModelView):
 
     icon = 'fa-solid fa-circle-user'
+    _can_create = False
+    _can_delete = False
+    _can_import = False
     fields = ['id', 'handle', 'first_name', 'last_name',
               ComputedField('full_name', getter=lambda req, obj: obj.full_name()),
               'email',
@@ -52,15 +55,6 @@ class UserView(PJSModelView):
 
     def __init__(self, *args, **kwargs):
         super().__init__(User, *args, **kwargs)
-
-    def can_create(self, request: Request) -> bool:
-        return False
-
-    def can_delete(self, request: Request) -> bool:
-        return False
-
-    def can_import(self, request: Request) -> bool:
-        return False
 
     def can_access_field(self, request: Request, field: BaseField, action: RequestAction | None = None) -> bool:
         action = action or request.state.action

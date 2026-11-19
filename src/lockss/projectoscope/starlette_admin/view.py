@@ -67,6 +67,32 @@ class PJSModelView(ModelView):
     show_goto_page = True
     row_click_navigate = False
 
+    # New settings
+    _can_create: bool = True
+    _can_delete: bool = True
+    _can_edit:  bool = True
+    _can_export: bool = True
+    _can_import: bool = True
+    _can_view_detail: bool = True
+
+    def can_create(self, request: Request) -> bool:
+        return self._can_create
+
+    def can_delete(self, request: Request) -> bool:
+        return self._can_delete
+
+    def can_edit(self, request: Request) -> bool:
+        return self._can_edit
+
+    def can_export(self, request: Request) -> bool:
+        return self._can_export
+
+    def can_import(self, request: Request) -> bool:
+        return self._can_import
+
+    def can_view_detail(self, request: Request) -> bool:
+        return self._can_view_detail
+
     async def validate(self, request: Request, data: dict[str, Any]) -> None:
         try:
             await self.validate_call(request, data)
