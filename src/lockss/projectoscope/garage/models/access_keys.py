@@ -29,6 +29,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from datetime import UTC, datetime
+from random import randrange
 from re import Pattern, compile as re_compile
 from typing import Annotated, ClassVar, Final, TypeAlias
 from uuid import UUID, uuid4
@@ -37,6 +38,7 @@ from pydantic import StringConstraints
 from starlette.requests import Request
 from sqlmodel import Field, Relationship, SQLModel
 
+from ...hq.models.users import User
 from .bucket_access_key_links import BucketAccessKeyLink
 
 
@@ -60,19 +62,23 @@ AccessKeyNameT: TypeAlias = Annotated[str, StringConstraints(min_length=1, max_l
 
 # See https://git.deuxfleurs.fr/garage-sdk/garage-admin-sdk-python/src/branch/main-v2/docs/GetKeyInfoResponse.md
 class AccessKey(SQLModel, table=True):
-    NAME_LENGTH: ClassVar[int] = 60
-
     __tablename__ = 'garage_access_keys'
 
     id: UUID | None = Field(default_factory=uuid4, primary_key=True, index=True, title='UUID')
     access_key_identifier: AccessKeyIdT | None = Field(default=None, title='Access Key ID')  # known as 'access_key_id' in their definition
-    created: datetime | None = Field(default=None, title='Creation Time (UTC)')
-    expiration: datetime | None = Field(default_factory=lambda: (now := datetime.now(UTC)).replace(year=now.year + 1), title='Expiration Time (UTC)')
+    created: datetime | None = Field(default=None, title='Creation Time', description='Understood in UTC')
+    expiration: datetime | None = Field(default_factory=lambda: (now := datetime.now(UTC)).replace(year=now.year + 1), title='Expiration Time', description='Understood in UTC')
     expired: bool = Field(False, title='Expired')
-    name: AccessKeyNameT = Field(title='Name')
-    user_id: UUID | None = Field(default=None, foreign_key='users.id')
+    name: AccessKeyNameT | None = Field(default=None, title='Name')
+
+    user_id: UUID | None = Field(default=None, foreign_key='users.id', title='Associated User')
+    user: User | None = Relationship()
 
     bucket_links: list[BucketAccessKeyLink] = Relationship(back_populates='access_key')
 
     def __admin_repr__(self, request: Request) -> str:
         return f'{self.access_key_identifier} ({self.name})'
+
+    @staticmethod
+    def generate_name(user: User) -> AccessKeyNameT:
+        return f'uk_{user.handle}_{randrange(100000):05d}' # max length: 29

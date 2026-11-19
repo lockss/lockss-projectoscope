@@ -51,8 +51,8 @@ class GarageComponent(Component[GarageComponentSettings]):
     def set_up_admin(self, app: Projectoscope) -> None:
         app.admin.add_view(DropDown(self.component_settings.title,
                                     [
-                                        BucketView(),
                                         AccessKeyView(self.component_settings),
+                                        BucketView(),
                                     ],
                                     icon='fa-solid fa-cloud-arrow-up'))
 
