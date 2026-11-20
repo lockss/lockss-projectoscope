@@ -36,13 +36,14 @@ from garage_admin_sdk import BucketApi, CreateBucketRequest, GetBucketInfoRespon
 from sqlalchemy import Select, func
 from sqlmodel import and_
 from starlette.requests import Request
-from starlette_admin import BaseField, DateTimeField, HasMany, RelationField, RequestAction, StringField, UUIDField
+from starlette_admin import BaseField, DateTimeField, RelationField, RequestAction, StringField, UUIDField
 
 from ...config import GarageComponentSettings
 from ...hq.models.users import User, user_
 from ..models.access_keys import AccessKey
 from ..models.bucket_access_key_links import BucketAccessKeyLink
 from ..models.buckets import Bucket
+from ..views.bucket_access_key_links import BucketAccessKeyLinkInlineView
 from . import GarageComponentView
 
 
@@ -67,6 +68,8 @@ class BucketView(GarageComponentView):
                       label=(crd := Bucket.model_fields['created']).title,
                       help_text=crd.description),
     ]
+
+    inlines = [BucketAccessKeyLinkInlineView]
 
     exclude_fields_from_create = ['bucket_identifier', 'global_alias', 'created']
 
