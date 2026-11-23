@@ -107,8 +107,8 @@ class BucketView(GarageComponentView):
         bucket.global_alias = Bucket.generate_global_alias(user)
         with self.api_client_context as api_client:
             # FIXME requires try/except
-            api_instance: BucketApi = BucketApi(api_client)
+            bucket_api: BucketApi = BucketApi(api_client)
             cbr: CreateBucketRequest = CreateBucketRequest(globalAlias=bucket.global_alias)
-            resp: GetBucketInfoResponse = api_instance.create_bucket(cbr)
-        bucket.bucket_identifier = resp.id
-        bucket.created = resp.created
+            gbir: GetBucketInfoResponse = bucket_api.create_bucket(cbr)
+        bucket.bucket_identifier = gbir.id
+        bucket.created = gbir.created

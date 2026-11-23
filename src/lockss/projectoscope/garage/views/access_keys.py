@@ -120,16 +120,16 @@ class AccessKeyView(GarageComponentView):
             access_key.expiration = access_key.expiration.astimezone(UTC) # FIXME timezones
         with self.api_client_context as api_client:
             # FIXME requires try/except
-            api_instance: AccessKeyApi = AccessKeyApi(api_client)
-            body: UpdateKeyRequestBody = UpdateKeyRequestBody(name=access_key.name,
+            access_key_api: AccessKeyApi = AccessKeyApi(api_client)
+            ukrb: UpdateKeyRequestBody = UpdateKeyRequestBody(name=access_key.name,
                                                               expiration=access_key.expiration,
                                                               neverExpires=access_key.expiration is None)
-            resp: GetKeyInfoResponse = api_instance.create_key(body)
-        access_key.access_key_identifier = resp.access_key_id
-        access_key.created = resp.created
-        access_key.expired = resp.expired
+            gkir: GetKeyInfoResponse = access_key_api.create_key(ukrb)
+        access_key.access_key_identifier = gkir.access_key_id
+        access_key.created = gkir.created
+        access_key.expired = gkir.expired
         access_key.user_id = user.id
-        request.state[f'sak_{access_key.access_key_identifier}'] = resp.secret_access_key
+        request.state[f'sak_{access_key.access_key_identifier}'] = gkir.secret_access_key
 
     async def after_create(self, request: Request, obj: Any) -> None:
         access_key: AccessKey = cast(AccessKey, obj)
@@ -142,8 +142,8 @@ class AccessKeyView(GarageComponentView):
         access_key: AccessKey = cast(AccessKey, obj)
         with self.api_client_context as api_client:
             # FIXME requires try/except
-            api_instance: AccessKeyApi = AccessKeyApi(api_client)
-            api_instance.delete_key(cast(str, access_key.access_key_identifier))
+            access_key_api: AccessKeyApi = AccessKeyApi(api_client)
+            access_key_api.delete_key(cast(str, access_key.access_key_identifier))
 
     async def before_edit(self, request: Request, data: dict[str, Any], obj: Any) -> None:
         access_key: AccessKey = cast(AccessKey, obj)
@@ -158,9 +158,9 @@ class AccessKeyView(GarageComponentView):
             expiration.astimezone(UTC) # FIXME timezones
         with self.api_client_context as api_client:
             # FIXME requires try/except
-            api_instance: AccessKeyApi = AccessKeyApi(api_client)
-            body: UpdateKeyRequestBody = UpdateKeyRequestBody(expiration=expiration,
+            access_key_api: AccessKeyApi = AccessKeyApi(api_client)
+            ukrb: UpdateKeyRequestBody = UpdateKeyRequestBody(expiration=expiration,
                                                               neverExpires=expiration is None)
-            resp: GetKeyInfoResponse = api_instance.update_key(cast(str, access_key.access_key_identifier), body)
-        access_key.expiration = resp.expiration
-        access_key.expired = resp.expired
+            gkir: GetKeyInfoResponse = access_key_api.update_key(cast(str, access_key.access_key_identifier), ukrb)
+        access_key.expiration = gkir.expiration
+        access_key.expired = gkir.expired
