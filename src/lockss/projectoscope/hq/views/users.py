@@ -35,11 +35,11 @@ from boltons.strutils import unit_len
 from starlette.requests import Request
 from starlette_admin import ActionSelection, BaseField, ComputedField, RequestAction, action, flash
 
-from ...starlette_admin.view import PJSModelView, COMPUTED_FIELD_ACTIONS, NON_COMPUTED_FIELD_ACTIONS
+from ...starlette_admin.view import View, COMPUTED_FIELD_ACTIONS, NON_COMPUTED_FIELD_ACTIONS
 from ..models.users import User, user_, BCRYPT_HASH_LENGTH
 
 
-class UserView(PJSModelView):
+class UserView(View):
 
     icon = 'fa-solid fa-circle-user'
     _can_create = False

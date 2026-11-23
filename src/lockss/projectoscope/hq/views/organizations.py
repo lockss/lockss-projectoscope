@@ -31,17 +31,18 @@
 from starlette.requests import Request
 from starlette_admin.fields import HasMany
 
-from ...starlette_admin.view import PJSModelView
+from ...starlette_admin.view import View
 from ..models.organizations import Organization
 from ..models.users import user_
 
 
-class OrganizationView(PJSModelView):
+class OrganizationView(View):
 
     icon = 'fa-solid fa-people-roof'
     _can_delete = False
     _can_import = False
     fields = ['id', 'handle', 'name', 'short_name', 'initiative', HasMany('users', key='user')]
+    exclude_fields_from_create = ['users']
     exclude_fields_from_list = ['id', 'users']
     fields_default_sort = ['name']
     searchable_fields = ['id', 'handle', 'name', 'short_name']

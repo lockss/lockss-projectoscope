@@ -31,10 +31,10 @@
 from garage_admin_sdk import ApiClient, Configuration
 
 from ...config import GarageComponentSettings
-from ...starlette_admin.view import PJSModelView
+from ...starlette_admin.view import View
 
 
-class GarageComponentView(PJSModelView):
+class GarageComponentView(View):
     api_client_context: ApiClient
 
     def __init__(self, garage_settings: GarageComponentSettings, *args, **kwargs) -> None:

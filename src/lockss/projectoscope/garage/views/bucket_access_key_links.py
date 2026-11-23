@@ -28,13 +28,17 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from starlette_admin import BooleanField, RelationField
-from starlette_admin.contrib.sqlmodel import InlineModelView
+from typing import Any, cast
 
+from garage_admin_sdk import BucketApi, CreateBucketRequest, GetBucketInfoResponse
+from starlette.requests import Request
+from starlette_admin import BooleanField, RelationField
+
+from ...starlette_admin.view import InlineView
 from ..models.bucket_access_key_links import BucketAccessKeyLink
 
 
-class BucketAccessKeyLinkInlineView(InlineModelView):
+class BucketAccessKeyLinkInlineView(InlineView):
     model = BucketAccessKeyLink
     fk_attr = 'bucket_id'
     fields = [
@@ -46,3 +50,13 @@ class BucketAccessKeyLinkInlineView(InlineModelView):
         BooleanField('write',
                      label=BucketAccessKeyLink.model_fields['write'].title)
     ]
+
+    async def before_create(self, request: Request, data: dict[str, Any], obj: Any) -> None:
+        link: BucketAccessKeyLink = cast(BucketAccessKeyLink, obj)
+        pass
+
+    async def before_edit(self, request: Request, data: dict[str, Any], obj: Any) -> None:
+        pass
+
+    async def before_delete(self, request: Request, obj: Any) -> None:
+        pass
