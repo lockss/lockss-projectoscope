@@ -61,26 +61,46 @@ class BucketAccessKeyLinkInlineView(InlineView):
         with self.parent_view.api_client_context as api_client:
             # FIXME requires try/except
             permission_api: PermissionApi = PermissionApi(api_client)
-            pcr: BucketKeyPermChangeRequest = BucketKeyPermChangeRequest(accessKeyId=cast(str, link.access_key.access_key_identifier),
-                                                                         bucketId=cast(str, bucket.bucket_identifier),
-                                                                         permissions=ApiBucketKeyPerm(owner=False,
-                                                                                                      read=link.read,
-                                                                                                      write=link.write))
-            resp: GetBucketInfoResponse = permission_api.allow_bucket_key(pcr)
+            bkpcr: BucketKeyPermChangeRequest = BucketKeyPermChangeRequest(accessKeyId=cast(str, link.access_key.access_key_identifier),
+                                                                           bucketId=cast(str, bucket.bucket_identifier),
+                                                                           permissions=ApiBucketKeyPerm(owner=False,
+                                                                                                        read=link.read,
+                                                                                                        write=link.write))
+            gbir: GetBucketInfoResponse = permission_api.allow_bucket_key(bkpcr)
             # FIXME Should check that request was honored?
 
     async def before_edit(self, request: Request, data: dict[str, Any], obj: Any) -> None:
-        pass
+        link: BucketAccessKeyLink = cast(BucketAccessKeyLink, obj)
+        bucket: Bucket = await self.parent_view.find_by_pk(request, link.bucket_id.hex) # FIXME UUID inconsistencies
+        read: bool = data.get('read', False)
+        write: bool = data.get('write', False)
+        print(f'{"#" * 500} {read=} {write=}')
+        with self.parent_view.api_client_context as api_client:
+            # FIXME requires try/except
+            permission_api: PermissionApi = PermissionApi(api_client)
+            bkpcr_allow: BucketKeyPermChangeRequest = BucketKeyPermChangeRequest(accessKeyId=cast(str, link.access_key.access_key_identifier),
+                                                                                 bucketId=cast(str, bucket.bucket_identifier),
+                                                                                 permissions=ApiBucketKeyPerm(owner=False,
+                                                                                                              read=link.read,
+                                                                                                              write=link.write))
+            gbir_allow: GetBucketInfoResponse = permission_api.allow_bucket_key(bkpcr_allow)
+            bkpcr_deny: BucketKeyPermChangeRequest = BucketKeyPermChangeRequest(accessKeyId=cast(str, link.access_key.access_key_identifier),
+                                                                                bucketId=cast(str, bucket.bucket_identifier),
+                                                                                permissions=ApiBucketKeyPerm(owner=True,            # meaning, deny owner
+                                                                                                             read=not link.read,    # meaning, deny read
+                                                                                                             write=not link.write)) # meaning, deny write
+            gbir_deny: GetBucketInfoResponse = permission_api.deny_bucket_key(bkpcr_deny)
+            # FIXME Should check that request was honored?
 
     async def before_delete(self, request: Request, obj: Any) -> None:
         link: BucketAccessKeyLink = cast(BucketAccessKeyLink, obj)
         with self.parent_view.api_client_context as api_client:
             # FIXME requires try/except
             permission_api: PermissionApi = PermissionApi(api_client)
-            pcr: BucketKeyPermChangeRequest = BucketKeyPermChangeRequest(accessKeyId=cast(str, link.access_key.access_key_identifier),
-                                                                         bucketId=cast(str, link.bucket.bucket_identifier),
-                                                                         permissions=ApiBucketKeyPerm(owner=True,  # meaning, deny owner
-                                                                                                      read=True,   # meaning, deny read
-                                                                                                      write=True)) # meaning, deny write
-            resp: GetBucketInfoResponse = permission_api.deny_bucket_key(pcr)
+            bkpcr: BucketKeyPermChangeRequest = BucketKeyPermChangeRequest(accessKeyId=cast(str, link.access_key.access_key_identifier),
+                                                                           bucketId=cast(str, link.bucket.bucket_identifier),
+                                                                           permissions=ApiBucketKeyPerm(owner=True,  # meaning, deny owner
+                                                                                                        read=True,   # meaning, deny read
+                                                                                                        write=True)) # meaning, deny write
+            gbir: GetBucketInfoResponse = permission_api.deny_bucket_key(bkpcr)
             # FIXME Should check that request was honored?
