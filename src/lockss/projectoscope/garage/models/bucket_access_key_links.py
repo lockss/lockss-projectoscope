@@ -28,10 +28,13 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from typing import TYPE_CHECKING
+from typing import Self, TYPE_CHECKING
 from uuid import UUID
 
+from pydantic import ModelWrapValidatorHandler, model_validator
 from sqlmodel import Field, Relationship, SQLModel
+
+from ...pydantic.errors import make_field_error
 
 if TYPE_CHECKING:
     from .access_keys import AccessKey
@@ -49,3 +52,11 @@ class BucketAccessKeyLink(SQLModel, table=True):
 
     bucket: 'Bucket' = Relationship(back_populates='access_key_links')
     access_key: 'AccessKey' = Relationship(back_populates='bucket_links')
+
+    @model_validator(mode='wrap')
+    @classmethod
+    def _check_admin(cls, data: Self, handler: ModelWrapValidatorHandler[Self]) -> Self:
+        mi: Self = handler(data)
+        if not (mi.read or mi.write):
+            raise make_field_error(cls, mi, ('read', 'value_error', "At least one of 'read' or 'write' should be true", None), ('write', 'value_error', "At least one of 'read' or 'write' should be true", None))
+        return mi

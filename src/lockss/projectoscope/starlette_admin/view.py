@@ -28,12 +28,13 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from typing import Any, TypeVar
+from collections.abc import Sequence
+from dataclasses import replace
+from typing import TypeVar
 
-from pydantic import ValidationError
 from starlette.requests import Request
-from starlette_admin import BaseField, RequestAction, flash
-from starlette_admin.contrib.sqlmodel import ModelView, InlineModelView
+from starlette_admin import BaseField, RelationField, RequestAction
+from starlette_admin.contrib.sqlmodel import InlineModelView, ModelView
 
 
 ModelViewT = TypeVar('ModelViewT', bound=ModelView)
@@ -61,17 +62,18 @@ def gray(field: BaseField) -> BaseField:
 
 def _make_view(name: str, parent: type[ModelView|InlineModelView]):
     class _View(parent):
-        # Custom ModelView settings
+        # Customize ModelView fields
         row_click_navigate = False
         show_goto_page = True
 
-        # New settings
+        # New fields
         _can_create: bool = True
         _can_delete: bool = True
         _can_edit: bool = True
         _can_export: bool = True
         _can_import: bool = True
         _can_view_detail: bool = True
+        _non_editable_fields: Sequence[str | BaseField] = []
 
         def can_create(self, request: Request) -> bool:
             return self._can_create
@@ -90,6 +92,16 @@ def _make_view(name: str, parent: type[ModelView|InlineModelView]):
 
         def can_view_detail(self, request: Request) -> bool:
             return self._can_view_detail
+
+        def get_fields_list(self, request: Request, *, include_nested: bool = False, action: RequestAction | None = None) -> Sequence[BaseField]:
+            ret: list[BaseField] = [*super().get_fields_list(request, include_nested=include_nested, action=action)]
+            match action:
+                case RequestAction.EDIT | RequestAction.INLINE_EDIT | None:  # FIXME unknown if None has bad side effects here
+                    ret = [replace(field, read_only=True, disabled=True) if field.name in self._non_editable_fields else field for field in ret]
+                    for field in ret:
+                        if isinstance(field, RelationField) and field._view is None:
+                            field._view = self
+            return ret
 
     _View.__name__ = name
     _View.__qualname__ = f'{__name__}.{name}'

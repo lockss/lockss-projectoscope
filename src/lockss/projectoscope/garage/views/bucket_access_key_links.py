@@ -30,12 +30,13 @@
 
 from typing import Any, cast
 
-from garage_admin_sdk import BucketApi, CreateBucketRequest, GetBucketInfoResponse
+from garage_admin_sdk import ApiBucketKeyPerm, BucketKeyPermChangeRequest, GetBucketInfoResponse, PermissionApi
 from starlette.requests import Request
 from starlette_admin import BooleanField, RelationField
 
 from ...starlette_admin.view import InlineView
 from ..models.bucket_access_key_links import BucketAccessKeyLink
+from ..models.buckets import Bucket
 
 
 class BucketAccessKeyLinkInlineView(InlineView):
@@ -52,11 +53,34 @@ class BucketAccessKeyLinkInlineView(InlineView):
     ]
 
     async def before_create(self, request: Request, data: dict[str, Any], obj: Any) -> None:
+        # Notes:
+        # - data['access_key'] and link.access_key are initialized, but link.access_key_id is None
+        # - data['bucket_id] and link.bucket_id are initialized, but data['bucket'] does not exist and link.bucket is None
         link: BucketAccessKeyLink = cast(BucketAccessKeyLink, obj)
-        pass
+        bucket: Bucket = await self.parent_view.find_by_pk(request, link.bucket_id.hex) # FIXME UUID inconsistencies
+        with self.parent_view.api_client_context as api_client:
+            # FIXME requires try/except
+            permission_api: PermissionApi = PermissionApi(api_client)
+            pcr: BucketKeyPermChangeRequest = BucketKeyPermChangeRequest(accessKeyId=cast(str, link.access_key.access_key_identifier),
+                                                                         bucketId=cast(str, bucket.bucket_identifier),
+                                                                         permissions=ApiBucketKeyPerm(owner=False,
+                                                                                                      read=link.read,
+                                                                                                      write=link.write))
+            resp: GetBucketInfoResponse = permission_api.allow_bucket_key(pcr)
+            # FIXME Should check that request was honored?
 
     async def before_edit(self, request: Request, data: dict[str, Any], obj: Any) -> None:
         pass
 
     async def before_delete(self, request: Request, obj: Any) -> None:
-        pass
+        link: BucketAccessKeyLink = cast(BucketAccessKeyLink, obj)
+        with self.parent_view.api_client_context as api_client:
+            # FIXME requires try/except
+            permission_api: PermissionApi = PermissionApi(api_client)
+            pcr: BucketKeyPermChangeRequest = BucketKeyPermChangeRequest(accessKeyId=cast(str, link.access_key.access_key_identifier),
+                                                                         bucketId=cast(str, link.bucket.bucket_identifier),
+                                                                         permissions=ApiBucketKeyPerm(owner=True,  # meaning, deny owner
+                                                                                                      read=True,   # meaning, deny read
+                                                                                                      write=True)) # meaning, deny write
+            resp: GetBucketInfoResponse = permission_api.deny_bucket_key(pcr)
+            # FIXME Should check that request was honored?

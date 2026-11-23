@@ -101,19 +101,6 @@ class BucketView(GarageComponentView):
         else:
             return Select(func.count()).select_from(Bucket, BucketAccessKeyLink, AccessKey).where(and_(Bucket.id == BucketAccessKeyLink.bucket_id, BucketAccessKeyLink.access_key_id == AccessKey.id, AccessKey.user_id == user.id))
 
-    def can_access_field(self, request: Request, field: BaseField, action: RequestAction | None = None) -> bool:
-        return super().can_access_field(request, field, action=action)
-
-    def get_fields_list(self, request: Request, *, include_nested: bool = False, action: RequestAction | None = None) -> Sequence[BaseField]:
-        ret: list[BaseField] = [*super().get_fields_list(request, include_nested=include_nested, action=action)]
-        match action:
-            case RequestAction.EDIT | RequestAction.INLINE_EDIT | None: # FIXME unknown if None has bad side effects here
-                ret = [replace(field, read_only=True, disabled=True) if field.name in self._non_editable_fields else field for field in ret]
-                for field in ret:
-                    if isinstance(field, RelationField) and field._view is None:
-                        field._view = self
-        return ret
-
     async def before_create(self, request: Request, data: dict[str, Any], obj: Any) -> None:
         bucket: Bucket = cast(Bucket, obj)
         user: User = user_(request)
