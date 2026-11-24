@@ -61,6 +61,7 @@ def gray(field: BaseField) -> BaseField:
 
 
 def _make_view(name: str, parent: type[ModelView|InlineModelView]):
+    #class _View(ModelView):
     class _View(parent):
         # Customize ModelView fields
         row_click_navigate = False
@@ -102,6 +103,10 @@ def _make_view(name: str, parent: type[ModelView|InlineModelView]):
                         if isinstance(field, RelationField) and field._view is None:
                             field._view = self
             return ret
+
+        async def handle_exception(self, request: Request, exc: Exception) -> None:
+            print(exc)
+            await super().handle_exception(request, exc)
 
     _View.__name__ = name
     _View.__qualname__ = f'{__name__}.{name}'

@@ -49,6 +49,7 @@ class AccessKeyView(GarageComponentView):
     DATETIME_FORMAT: ClassVar[str] = '%Y-%m-%d %H:%M:%S'
 
     icon = 'fa-solid fa-key'
+
     _can_import = False
 
     fields = [

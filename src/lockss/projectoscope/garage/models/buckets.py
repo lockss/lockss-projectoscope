@@ -31,14 +31,14 @@
 from datetime import datetime
 from random import randrange
 from re import Pattern, compile as re_compile
-from typing import Annotated, Final, TypeAlias, TYPE_CHECKING
+from typing import Annotated, Final, TypeAlias
 from uuid import UUID, uuid4
 
 from pydantic import ConfigDict, StringConstraints
 from starlette.requests import Request
 from sqlmodel import Field, Relationship, SQLModel
 
-from ...hq.models.users import User, user_
+from ...hq.models.users import User
 from .bucket_access_key_links import BucketAccessKeyLink
 
 

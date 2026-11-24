@@ -112,7 +112,7 @@ class UserView(View):
     def is_accessible(self, request: Request) -> bool:
         return (u := user_(request)).active and u.admin
 
-    async def validate_call(self, request: Request, data: dict[str, Any]) -> None:
+    async def validate(self, request: Request, data: dict[str, Any]) -> None:
         data_copy = data.copy()
         data_copy['hashed_password'] = '0' * BCRYPT_HASH_LENGTH
         User.model_validate(data_copy)

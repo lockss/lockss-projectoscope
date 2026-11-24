@@ -28,11 +28,12 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from typing import Self, TYPE_CHECKING
+from typing import ClassVar, Self, TYPE_CHECKING
 from uuid import UUID
 
 from pydantic import ModelWrapValidatorHandler, model_validator
 from sqlmodel import Field, Relationship, SQLModel
+from starlette.requests import Request
 
 from ...pydantic.errors import make_field_error
 
@@ -42,6 +43,8 @@ if TYPE_CHECKING:
 
 
 class BucketAccessKeyLink(SQLModel, table=True):
+    DISPLAY_NAME: ClassVar[str] = 'Access Permission'
+
     __tablename__ = 'garage_bucket_access_key_links'
 
     bucket_id: UUID | None = Field(default=None, foreign_key='garage_buckets.id', primary_key=True, title='Bucket ID')
@@ -52,6 +55,9 @@ class BucketAccessKeyLink(SQLModel, table=True):
 
     bucket: 'Bucket' = Relationship(back_populates='access_key_links')
     access_key: 'AccessKey' = Relationship(back_populates='bucket_links')
+
+    def __admin_repr__(self, request: Request) -> str:
+        return f'{self.bucket.__admin_repr__(request)} \u2192 {self.access_key.__admin_repr__(request)}'
 
     @model_validator(mode='wrap')
     @classmethod

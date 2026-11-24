@@ -28,15 +28,13 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from collections.abc import Sequence
-from dataclasses import replace
 from typing import Any, ClassVar, cast
 
 from garage_admin_sdk import BucketApi, CreateBucketRequest, GetBucketInfoResponse
 from sqlalchemy import Select, func
 from sqlmodel import and_
 from starlette.requests import Request
-from starlette_admin import BaseField, DateTimeField, RelationField, RequestAction, StringField, UUIDField
+from starlette_admin import DateTimeField, StringField, UUIDField
 
 from ...config import GarageComponentSettings
 from ...hq.models.users import User, user_
@@ -51,6 +49,7 @@ class BucketView(GarageComponentView):
     DATETIME_FORMAT: ClassVar[str] = '%Y-%m-%d %H:%M:%S'
 
     icon = 'fa-solid fa-bucket'
+
     _can_delete = False
     _can_import = False
 

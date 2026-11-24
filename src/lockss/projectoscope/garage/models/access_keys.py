@@ -31,7 +31,7 @@
 from datetime import UTC, datetime
 from random import randrange
 from re import Pattern, compile as re_compile
-from typing import Annotated, ClassVar, Final, TypeAlias
+from typing import Annotated, Final, TypeAlias
 from uuid import UUID, uuid4
 
 from pydantic import StringConstraints

@@ -30,6 +30,7 @@
 
 from typing import Any, cast
 
+from boltons.strutils import pluralize
 from garage_admin_sdk import ApiBucketKeyPerm, BucketKeyPermChangeRequest, GetBucketInfoResponse, PermissionApi
 from starlette.requests import Request
 from starlette_admin import BooleanField, RelationField
@@ -41,7 +42,10 @@ from ..models.buckets import Bucket
 
 class BucketAccessKeyLinkInlineView(InlineView):
     model = BucketAccessKeyLink
+    menu_label = pluralize(BucketAccessKeyLink.DISPLAY_NAME) # Needed for heading of inline pane
+    display_name = BucketAccessKeyLink.DISPLAY_NAME
     fk_attr = 'bucket_id'
+
     fields = [
         RelationField('access_key',
                       key='access-key',

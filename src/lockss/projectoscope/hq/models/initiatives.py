@@ -28,7 +28,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from typing import Annotated, Final, TypeAlias, TYPE_CHECKING
+from typing import Annotated, ClassVar, Final, TypeAlias, TYPE_CHECKING
 from uuid import UUID, uuid4
 
 from pydantic import StringConstraints
