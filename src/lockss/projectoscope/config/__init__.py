@@ -54,6 +54,7 @@ class BaseComponentSettings(BaseSettings, ABC):
 
 ComponentType: TypeAlias = Literal[
     'hq',
+    'filetree',
     'garage',
     'profile',
 ]
@@ -67,7 +68,14 @@ class HqSettings(BaseComponentSettings):
     title: str = DEFAULT_TITLE
 
 
-class GarageComponentSettings(BaseComponentSettings):
+class FileTreeManagerSettings(BaseComponentSettings):
+    TYPE: ClassVar[Literal['file-tree']] = 'file-tree'
+    DEFAULT_TITLE: ClassVar[str] = 'File Tree Manager'
+
+    type: Literal['file-tree'] = TYPE
+    title: str = DEFAULT_TITLE
+
+
 class GarageManagerSettings(BaseComponentSettings):
     model_config = SettingsConfigDict(env_file='.env',
                                       env_prefix='GARAGE_',
@@ -92,7 +100,7 @@ class ProfileSettings(BaseComponentSettings):
 ComponentSettings: TypeAlias = Annotated[
     Union[
         HqSettings,
-        GarageComponentSettings,
+        FileTreeManagerSettings,
         GarageManagerSettings,
         ProfileSettings,
     ],
