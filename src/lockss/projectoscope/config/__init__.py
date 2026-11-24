@@ -68,16 +68,17 @@ class HqSettings(BaseComponentSettings):
 
 
 class GarageComponentSettings(BaseComponentSettings):
+class GarageManagerSettings(BaseComponentSettings):
     model_config = SettingsConfigDict(env_file='.env',
                                       env_prefix='GARAGE_',
                                       extra = 'ignore')
 
     TYPE: ClassVar[Literal['garage']] = 'garage'
-    DEFAULT_TITLE: ClassVar[str] = 'Garage Controller'
+    DEFAULT_TITLE: ClassVar[str] = 'Garage Manager'
 
     type: Literal['garage'] = TYPE
     title: str = DEFAULT_TITLE
-    admin: HttpUrl = Field(title='Garage Admin URL')
+    admin: HttpUrl = Field(title='Admin URL')
     admin_token: SecretStr = Field(title='Admin Token')
 
 
@@ -92,6 +93,7 @@ ComponentSettings: TypeAlias = Annotated[
     Union[
         HqSettings,
         GarageComponentSettings,
+        GarageManagerSettings,
         ProfileSettings,
     ],
     Field(discriminator='type')

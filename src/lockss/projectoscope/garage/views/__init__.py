@@ -30,15 +30,15 @@
 
 from garage_admin_sdk import ApiClient, Configuration
 
-from ...config import GarageComponentSettings
+from ...config import GarageManagerSettings
 from ...starlette_admin.view import View
 
 
 class GarageComponentView(View):
     api_client_context: ApiClient
 
-    def __init__(self, garage_settings: GarageComponentSettings, *args, **kwargs) -> None:
+    def __init__(self, garage_manager_settings: GarageManagerSettings, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        configuration: Configuration = Configuration(host=garage_settings.admin.encoded_string().rstrip('/'),
-                                                     access_token=garage_settings.admin_token.get_secret_value())
+        configuration: Configuration = Configuration(host=garage_manager_settings.admin.encoded_string().rstrip('/'),
+                                                     access_token=garage_manager_settings.admin_token.get_secret_value())
         self.api_client_context = ApiClient(configuration)

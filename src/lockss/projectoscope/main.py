@@ -44,7 +44,7 @@ import uvicorn
 import yaml
 
 from .component import Component
-from .config import HqSettings, ProfileSettings, ProjectoscopeSettings, component_sort_key, GarageComponentSettings
+from .config import GarageManagerSettings, HqSettings, ProfileSettings, ProjectoscopeSettings, component_sort_key
 from .db import vet_database_url
 from .hq import HqComponent
 from .optional import ensure_garage
@@ -98,10 +98,10 @@ class Projectoscope:
             match typ := settings.type:
                 case HqSettings.TYPE:
                     HqComponent(self.settings.overseer, cast(HqSettings, settings)).set_up(self)
-                case GarageComponentSettings.TYPE:
+                case GarageManagerSettings.TYPE:
                     ensure_garage()
-                    from .garage import GarageComponent
-                    GarageComponent(self.settings.overseer, cast(GarageComponentSettings, settings)).set_up(self)
+                    from .garage import GarageManager
+                    GarageManager(self.settings.overseer, cast(GarageManagerSettings, settings)).set_up(self)
                 case _:
                     raise InternalError from ValueError(typ)
         if self.settings.is_hq():

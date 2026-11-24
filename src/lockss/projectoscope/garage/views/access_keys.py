@@ -39,7 +39,7 @@ from starlette.requests import Request
 from starlette.status import HTTP_400_BAD_REQUEST
 from starlette_admin import BaseField, BooleanField, DateTimeField, HasOne, RequestAction, StringField, UUIDField, flash
 
-from ...config import GarageComponentSettings
+from ...config import GarageManagerSettings
 from ...hq.models.users import User, user_
 from ..models.access_keys import AccessKey
 from . import GarageComponentView
@@ -92,8 +92,8 @@ class AccessKeyView(GarageComponentView):
 
     exclude_fields_from_list = ['id', 'created']
 
-    def __init__(self, garage_settings: GarageComponentSettings, *args, **kwargs) -> None:
-        super().__init__(garage_settings, AccessKey, *args, **kwargs)
+    def __init__(self, garage_manager_settings: GarageManagerSettings, *args, **kwargs) -> None:
+        super().__init__(garage_manager_settings, AccessKey, *args, **kwargs)
 
     def is_accessible(self, request: Request) -> bool:
         return user_(request).active

@@ -36,7 +36,7 @@ from sqlmodel import and_
 from starlette.requests import Request
 from starlette_admin import DateTimeField, StringField, UUIDField
 
-from ...config import GarageComponentSettings
+from ...config import GarageManagerSettings
 from ...hq.models.users import User, user_
 from ..models.access_keys import AccessKey
 from ..models.bucket_access_key_links import BucketAccessKeyLink
@@ -82,8 +82,8 @@ class BucketView(GarageComponentView):
 
     exclude_fields_from_list = ['id', 'created']
 
-    def __init__(self, garage_settings: GarageComponentSettings, *args, **kwargs) -> None:
-        super().__init__(garage_settings, Bucket, *args, **kwargs)
+    def __init__(self, garage_manager_settings: GarageManagerSettings, *args, **kwargs) -> None:
+        super().__init__(garage_manager_settings, Bucket, *args, **kwargs)
 
     def is_accessible(self, request: Request) -> bool:
         return user_(request).active

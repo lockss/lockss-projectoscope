@@ -38,7 +38,7 @@ from typing import TYPE_CHECKING
 from starlette_admin import DropDown
 
 from ..component import Component
-from ..config import GarageComponentSettings
+from ..config import GarageManagerSettings
 from .views.buckets import BucketView
 from .views.access_keys import AccessKeyView
 
@@ -46,7 +46,7 @@ if TYPE_CHECKING:
     from ..main import Projectoscope
 
 
-class GarageComponent(Component[GarageComponentSettings]):
+class GarageManager(Component[GarageManagerSettings]):
 
     def set_up_admin(self, app: Projectoscope) -> None:
         app.admin.add_view(DropDown(self.component_settings.title,
