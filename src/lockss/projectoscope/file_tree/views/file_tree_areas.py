@@ -39,6 +39,5 @@ class FileTreeAreaView(View):
     _can_delete = False
     _can_import = False
 
-    def __init__(self, file_tree_manager_settings: FileTreeManagerSettings, *args, **kwargs) -> None:
-        super().__init__(file_tree_manager_settings, FileTreeArea, *args, **kwargs)
-
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(FileTreeArea, *args, **kwargs)

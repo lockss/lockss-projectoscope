@@ -44,8 +44,9 @@ import uvicorn
 import yaml
 
 from .component import Component
-from .config import GarageManagerSettings, HqSettings, ProfileSettings, ProjectoscopeSettings, component_sort_key
+from .config import FileTreeManagerSettings, GarageManagerSettings, HqSettings, ProfileSettings, ProjectoscopeSettings, component_sort_key
 from .db import vet_database_url
+from .file_tree import FileTreeManager
 from .hq import HqComponent
 from .optional import ensure_garage
 from .profile import ProfileComponent
@@ -98,6 +99,8 @@ class Projectoscope:
             match typ := settings.type:
                 case HqSettings.TYPE:
                     HqComponent(self.settings.overseer, cast(HqSettings, settings)).set_up(self)
+                case FileTreeManagerSettings.TYPE:
+                    FileTreeManager(self.settings.overseer, cast(FileTreeManagerSettings, settings)).set_up(self)
                 case GarageManagerSettings.TYPE:
                     ensure_garage()
                     from .garage import GarageManager

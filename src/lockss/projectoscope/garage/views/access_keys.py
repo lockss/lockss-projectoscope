@@ -42,10 +42,10 @@ from starlette_admin import BaseField, BooleanField, DateTimeField, HasOne, Requ
 from ...config import GarageManagerSettings
 from ...hq.models.users import User, user_
 from ..models.access_keys import AccessKey
-from . import GarageComponentView
+from . import GarageManagerView
 
 
-class AccessKeyView(GarageComponentView):
+class AccessKeyView(GarageManagerView):
     DATETIME_FORMAT: ClassVar[str] = '%Y-%m-%d %H:%M:%S'
 
     icon = 'fa-solid fa-key'

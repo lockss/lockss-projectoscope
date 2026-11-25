@@ -42,10 +42,10 @@ from ..models.access_keys import AccessKey
 from ..models.bucket_access_key_links import BucketAccessKeyLink
 from ..models.buckets import Bucket
 from ..views.bucket_access_key_links import BucketAccessKeyLinkInlineView
-from . import GarageComponentView
+from . import GarageManagerView
 
 
-class BucketView(GarageComponentView):
+class BucketView(GarageManagerView):
     DATETIME_FORMAT: ClassVar[str] = '%Y-%m-%d %H:%M:%S'
 
     icon = 'fa-solid fa-bucket'

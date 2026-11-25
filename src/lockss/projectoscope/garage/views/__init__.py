@@ -34,7 +34,7 @@ from ...config import GarageManagerSettings
 from ...starlette_admin.view import View
 
 
-class GarageComponentView(View):
+class GarageManagerView(View):
     api_client_context: ApiClient
 
     def __init__(self, garage_manager_settings: GarageManagerSettings, *args, **kwargs) -> None:

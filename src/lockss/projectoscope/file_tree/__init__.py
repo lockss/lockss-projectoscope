@@ -28,22 +28,26 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from typing import TYPE_CHECKING
+
 from starlette_admin import DropDown
 
 from ..component import Component
 from ..config import FileTreeManagerSettings
-from ..main import Projectoscope
 from .views.file_trees import FileTreeView
 from .views.file_tree_areas import FileTreeAreaView
 
+if TYPE_CHECKING:
+    from ..main import Projectoscope
 
-class GarageManager(Component[FileTreeManagerSettings]):
+
+class FileTreeManager(Component[FileTreeManagerSettings]):
 
     def set_up_admin(self, app: Projectoscope) -> None:
         app.admin.add_view(DropDown(self.component_settings.title,
                                     [
-                                        FileTreeAreaView(self.component_settings),
-                                        FileTreeView(self.component_settings),
+                                        FileTreeAreaView(),
+                                        FileTreeView(),
                                     ],
                                     icon='fa-solid fa-folder-closed'))
 

@@ -54,7 +54,7 @@ class BaseComponentSettings(BaseSettings, ABC):
 
 ComponentType: TypeAlias = Literal[
     'hq',
-    'filetree',
+    'file-tree',
     'garage',
     'profile',
 ]
