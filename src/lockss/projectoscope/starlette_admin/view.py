@@ -30,7 +30,7 @@
 
 from collections.abc import Sequence
 from dataclasses import replace
-from typing import Generic, Self, TypeAlias, TypeVar, cast
+from typing import Generic, TypeVar
 
 from sqlmodel import SQLModel
 from starlette.requests import Request
@@ -39,8 +39,6 @@ from starlette_admin.contrib.sqla import InlineModelView as SQLAInlineModelView,
 from starlette_admin.contrib.sqla.converters import BaseSQLAModelConverter
 from starlette_admin.contrib.sqlmodel import InlineModelView, ModelView
 
-
-#ModelViewT = TypeVar('ModelViewT', bound=BaseModelView) # the nearest common ancestor of ModelView and InlineModelView
 
 ModelViewT = TypeVar('ModelViewT', bound=ModelView | InlineModelView)
 
