@@ -43,8 +43,6 @@ class UserView(View):
 
     icon = 'fa-solid fa-circle-user'
     _can_create = False
-    _can_delete = False
-    _can_import = False
     fields = ['id', 'handle', 'first_name', 'last_name',
               ComputedField('full_name', getter=lambda req, obj: obj.full_name()),
               'email',

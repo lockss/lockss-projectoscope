@@ -39,8 +39,6 @@ from ..models.users import user_
 class OrganizationView(View):
 
     icon = 'fa-solid fa-people-roof'
-    _can_delete = False
-    _can_import = False
     fields = ['id', 'handle', 'name', 'short_name', 'initiative', HasMany('users', key='user')]
     exclude_fields_from_create = ['users']
     exclude_fields_from_list = ['id', 'users']

@@ -39,8 +39,6 @@ from ..models.users import user_
 class InitiativeView(View):
 
     icon = 'fa-solid fa-briefcase'
-    _can_delete = False
-    _can_import = False
     fields = ['id', 'handle', 'name', 'short_name', HasMany('organizations', key='organization')]
     exclude_fields_from_create = ['organizations']
     exclude_fields_from_list = ['id', 'organizations']

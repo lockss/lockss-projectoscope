@@ -46,6 +46,8 @@ class BucketAccessKeyLinkInlineView(InlineView):
     display_name = BucketAccessKeyLink.DISPLAY_NAME
     fk_attr = 'bucket_id'
 
+    _can_delete = True
+
     fields = [
         RelationField('access_key',
                       key='access-key',

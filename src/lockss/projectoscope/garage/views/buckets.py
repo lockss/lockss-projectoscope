@@ -50,9 +50,6 @@ class BucketView(GarageManagerView):
 
     icon = 'fa-solid fa-bucket'
 
-    _can_delete = False
-    _can_import = False
-
     fields = [
         UUIDField('id',
                   version=4,

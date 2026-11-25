@@ -50,7 +50,7 @@ class AccessKeyView(GarageManagerView):
 
     icon = 'fa-solid fa-key'
 
-    _can_import = False
+    _can_delete = True
 
     fields = [
         UUIDField('id',

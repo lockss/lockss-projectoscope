@@ -40,10 +40,10 @@ from starlette_admin.contrib.sqla.converters import BaseSQLAModelConverter
 from starlette_admin.contrib.sqlmodel import InlineModelView, ModelView
 
 
-ModelViewT = TypeVar('ModelViewT', bound=ModelView | InlineModelView)
+ModelViewT = TypeVar('ModelViewT')
 
 
-ModelViewParentT = TypeVar('ModelViewParentT', bound=SQLAModelView | SQLAInlineModelView)
+ModelViewParentT = TypeVar('ModelViewParentT')
 
 
 class ViewHelper(Generic[ModelViewT, ModelViewParentT]):
