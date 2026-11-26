@@ -51,32 +51,16 @@ class BucketView(GarageManagerView):
     icon = 'fa-solid fa-bucket'
 
     fields = [
-        UUIDField('id',
-                  version=4,
-                  label=Bucket.model_fields['id'].title),
-        StringField('bucket_identifier',
-                    copy_to_clipboard=True,
-                    label=Bucket.model_fields['bucket_identifier'].title),
-        StringField('global_alias',
-                    label=Bucket.model_fields['global_alias'].title),
-        DateTimeField('created',
-                      output_format=DATETIME_FORMAT,
-                      label=(crd := Bucket.model_fields['created']).title,
-                      help_text=crd.description),
+        UUIDField('id', version=4, label=Bucket.model_fields['id'].title),
+        StringField('bucket_identifier', copy_to_clipboard=True, label=Bucket.model_fields['bucket_identifier'].title),
+        StringField('global_alias', label=Bucket.model_fields['global_alias'].title),
+        DateTimeField('created', output_format=DATETIME_FORMAT, label=(crd := Bucket.model_fields['created']).title, help_text=crd.description),
     ]
 
     inlines = [BucketAccessKeyLinkInlineView]
 
     exclude_fields_from_create = ['bucket_identifier', 'global_alias', 'created']
-
-    exclude_fields_from_detail = []
-
-    exclude_fields_from_edit = []
-
     _non_editable_fields = ['bucket_identifier', 'global_alias', 'created']
-
-    exclude_fields_from_export = []
-
     exclude_fields_from_list = ['id', 'created']
 
     def __init__(self, garage_manager_settings: GarageManagerSettings, *args, **kwargs) -> None:
@@ -89,13 +73,20 @@ class BucketView(GarageManagerView):
         if (user := user_(request)).admin:
             return super().get_list_query(request)
         else:
-            return Select(Bucket, BucketAccessKeyLink, AccessKey).where(and_(Bucket.id == BucketAccessKeyLink.bucket_id, BucketAccessKeyLink.access_key_id == AccessKey.id, AccessKey.user_id == user.id))
+            return Select(Bucket, BucketAccessKeyLink, AccessKey) \
+                   .where(and_(Bucket.id == BucketAccessKeyLink.bucket_id,
+                               BucketAccessKeyLink.access_key_id == AccessKey.id,
+                               AccessKey.user_id == user.id))
 
     def get_count_query(self, request: Request) -> Select:
         if (user := user_(request)).admin:
             return super().get_count_query(request)
         else:
-            return Select(func.count()).select_from(Bucket, BucketAccessKeyLink, AccessKey).where(and_(Bucket.id == BucketAccessKeyLink.bucket_id, BucketAccessKeyLink.access_key_id == AccessKey.id, AccessKey.user_id == user.id))
+            return Select(func.count()) \
+                   .select_from(Bucket, BucketAccessKeyLink, AccessKey) \
+                   .where(and_(Bucket.id == BucketAccessKeyLink.bucket_id,
+                               BucketAccessKeyLink.access_key_id == AccessKey.id,
+                               AccessKey.user_id == user.id))
 
     async def before_create(self, request: Request, data: dict[str, Any], obj: Any) -> None:
         bucket: Bucket = cast(Bucket, obj)

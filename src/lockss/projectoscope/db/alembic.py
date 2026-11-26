@@ -29,4 +29,5 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from ..hq.models import *
+from ..file_tree.models import *
 from ..garage.models import *

@@ -30,8 +30,9 @@
 
 from collections.abc import Sequence
 from dataclasses import replace
-from typing import Generic, TypeVar
+from typing import Generic, TypeVar, Any
 
+from sqlalchemy.exc import IntegrityError as SQLAIntegrityError
 from sqlmodel import SQLModel
 from starlette.requests import Request
 from starlette_admin import BaseField, BaseModelView, RelationField, RequestAction
@@ -39,11 +40,34 @@ from starlette_admin.contrib.sqla import InlineModelView as SQLAInlineModelView,
 from starlette_admin.contrib.sqla.converters import BaseSQLAModelConverter
 from starlette_admin.contrib.sqlmodel import InlineModelView, ModelView
 
+try:
+    from sqlite3 import IntegrityError as SQLite3IntegrityError
+except ImportError:
+    class SQLite3IntegrityError(Exception): ...
 
-ModelViewT = TypeVar('ModelViewT')
+
+ModelViewT = TypeVar('ModelViewT', bound=ModelView | InlineModelView)
 
 
-ModelViewParentT = TypeVar('ModelViewParentT')
+ModelViewParentT = TypeVar('ModelViewParentT', bound=SQLAModelView | SQLAInlineModelView)
+
+
+class IntegrityError(SQLAIntegrityError):
+
+    fields: Sequence[str]
+
+    def __init__(self,
+                 sqlaie: SQLAIntegrityError,
+                 orig: BaseException,
+                 fields: Sequence[str]) -> None:
+        super().__init__(sqlaie.statement,
+                         sqlaie.params,
+                         orig,
+                         hide_parameters=sqlaie.hide_parameters,
+                         connection_invalidated=sqlaie.connection_invalidated,
+                         code=sqlaie.code,
+                         ismulti=None)
+        self.fields = fields
 
 
 class ViewHelper(Generic[ModelViewT, ModelViewParentT]):
@@ -53,6 +77,8 @@ class ViewHelper(Generic[ModelViewT, ModelViewParentT]):
     def __init__(self, owner: ModelViewT, super_owner: ModelViewParentT):
         self.owner = owner
         self.super_owner = super_owner
+        self.owner.row_click_navigate = False
+        self.owner.show_goto_page = True
 
     def can_create(self, request: Request) -> bool:
         return getattr(self.owner, '_can_create', True)
@@ -72,11 +98,24 @@ class ViewHelper(Generic[ModelViewT, ModelViewParentT]):
     def can_view_detail(self, request: Request) -> bool:
         return getattr(self.owner, '_can_view_detail', True)
 
+    async def create(self, request: Request, data: dict[str, Any]) -> Any:
+        try:
+            return await self.super_owner.create(request, data)
+        except SQLAIntegrityError as sqlaie:
+            await request.state.session.rollback()
+            if isinstance(orig := sqlaie.orig, SQLite3IntegrityError):
+                s = str(orig)
+                if (field_name := s.rpartition('.')[2]) in self.owner.model.model_fields:
+                    raise IntegrityError(sqlaie, orig, (field_name,))
+            # Unknown DB backend, or known DB backend but unknown circumstances
+            raise IntegrityError(sqlaie, orig, tuple())
+
     def get_fields_list(self, request: Request, *, include_nested: bool = False, action: RequestAction | None = None) -> Sequence[BaseField]:
         ret: list[BaseField] = [*self.super_owner.get_fields_list(request, include_nested=include_nested, action=action)]
+        action = action or request.state.action
         match action:
-            case RequestAction.EDIT | RequestAction.INLINE_EDIT | None:  # FIXME unknown if None has bad side effects here
-                ret = [replace(field, read_only=True, disabled=True) if field.name in getattr(self.owner, '_non_editable_fields', []) else field for field in ret]
+            case RequestAction.EDIT | RequestAction.INLINE_EDIT:  # FIXME unknown if None has bad side effects here
+                ret = [replace(field, read_only=True, disabled=True) if field.name in self._non_editable_fields() else field for field in ret]
                 for field in ret:
                     if isinstance(field, RelationField) and field._view is None:
                         field._view = self.owner
@@ -86,19 +125,35 @@ class ViewHelper(Generic[ModelViewT, ModelViewParentT]):
         print(exc)
         await self.super_owner.handle_exception(request, exc)
 
+    async def validate(self, request: Request, data: dict[str, Any]) -> None:
+        action: RequestAction = request.state.action
+        match action:
+            case RequestAction.EDIT |  RequestAction.INLINE_EDIT:
+                edit_validation_model: type[SQLModel] | None = self._edit_validation_model()
+                if edit_validation_model:
+                    edit_validation_model.model_validate(data)
+                    return
+        # data_copy = data.copy()
+        # for field_name in self._non_editable_fields():
+        #     data_copy[field_name] = self.owner.model.model_fields[field_name].json_schema_extra.get('examples', (None,))[0]
+        # await self.super_owner.validate(request, data_copy)
+        await self.super_owner.validate(request, data)
+
+    def _edit_validation_model(self) -> type[SQLModel] | None:
+        return getattr(self.owner, '_edit_validation_model', None)
+
+    def _non_editable_fields(self):
+        return getattr(self.owner, '_non_editable_fields', [])
+
 
 class View(ModelView):
-    helper: ViewHelper[ModelView,SQLAModelView]
+    helper: ViewHelper[ModelView, SQLAModelView]
+    _edit_validation_model: type[SQLModel] | None = None
+    _non_editable_fields: Sequence[str] = []
 
-    def __init__(self,
-                 model: type[SQLModel],
-                 icon: str | None = None,
-                 display_name: str | None = None,
-                 menu_label: str | None = None,
-                 key: str | None = None,
-                 converter: BaseSQLAModelConverter | None = None) -> None:
-        super().__init__(model, icon=icon, display_name=display_name, menu_label=menu_label, key=key, converter=converter)
-        self.helper = ViewHelper[ModelView,SQLAModelView](self, super())
+    def __init__(self, model: type[SQLModel]) -> None:
+        super().__init__(model)
+        self.helper = ViewHelper[ModelView, SQLAModelView](self, super())
 
     def can_create(self, request: Request) -> bool:
         return self.helper.can_create(request)
@@ -118,19 +173,27 @@ class View(ModelView):
     def can_view_detail(self, request: Request) -> bool:
         return self.helper.can_view_detail(request)
 
+    async def create(self, request: Request, data: dict[str, Any]) -> Any:
+        return await self.helper.create(request, data)
+
     def get_fields_list(self, request: Request, *, include_nested: bool = False, action: RequestAction | None = None) -> Sequence[BaseField]:
         return self.helper.get_fields_list(request, include_nested=include_nested, action=action)
 
     async def handle_exception(self, request: Request, exc: Exception) -> None:
         await self.helper.handle_exception(request, exc)
+
+    async def validate(self, request: Request, data: dict[str, Any]) -> None:
+        await self.helper.validate(request, data)
 
 
 class InlineView(InlineModelView):
-    helper: ViewHelper[InlineModelView,SQLAInlineModelView]
+    helper: ViewHelper[InlineModelView, SQLAInlineModelView]
+    _edit_validation_model: type[SQLModel] | None = None
+    _non_editable_fields: Sequence[str] = []
 
     def __init__(self, parent_view: BaseModelView | None = None) -> None:
         super().__init__(parent_view=parent_view)
-        self.helper = ViewHelper[InlineModelView,SQLAInlineModelView](self, super())
+        self.helper = ViewHelper[InlineModelView, SQLAInlineModelView](self, super())
 
     def can_create(self, request: Request) -> bool:
         return self.helper.can_create(request)
@@ -150,11 +213,17 @@ class InlineView(InlineModelView):
     def can_view_detail(self, request: Request) -> bool:
         return self.helper.can_view_detail(request)
 
+    async def create(self, request: Request, data: dict[str, Any]) -> Any:
+        return await self.helper.create(request, data)
+
     def get_fields_list(self, request: Request, *, include_nested: bool = False, action: RequestAction | None = None) -> Sequence[BaseField]:
         return self.helper.get_fields_list(request, include_nested=include_nested, action=action)
 
     async def handle_exception(self, request: Request, exc: Exception) -> None:
         await self.helper.handle_exception(request, exc)
+
+    async def validate(self, request: Request, data: dict[str, Any]) -> None:
+        await self.helper.validate(request, data)
 
 
 def gray(field: BaseField) -> BaseField:

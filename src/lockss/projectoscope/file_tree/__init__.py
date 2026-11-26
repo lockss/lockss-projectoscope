@@ -46,7 +46,7 @@ class FileTreeManager(Component[FileTreeManagerSettings]):
     def set_up_admin(self, app: Projectoscope) -> None:
         app.admin.add_view(DropDown(self.component_settings.title,
                                     [
-                                        FileTreeAreaView(),
+                                        FileTreeAreaView(self.component_settings),
                                         FileTreeView(),
                                     ],
                                     icon='fa-solid fa-folder-closed'))

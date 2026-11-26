@@ -27,3 +27,10 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
+
+def _initialize_models() -> None:
+    from .file_tree_areas import FileTreeArea
+    from .file_trees import FileTree
+
+
+_initialize_models()

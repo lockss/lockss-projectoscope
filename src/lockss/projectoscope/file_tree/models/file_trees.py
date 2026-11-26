@@ -30,10 +30,18 @@
 
 from uuid import UUID, uuid4
 
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field, Relationship, SQLModel
+
+from ...pydantic.paths import DirectoryName
+from .file_tree_areas import FileTreeArea
 
 
 class FileTree(SQLModel, table=True):
     __tablename__ = 'file_trees'
 
     id: UUID | None = Field(default_factory=uuid4, primary_key=True, index=True, title='UUID')
+    name: DirectoryName = Field(title='Name', description='Directory name')
+    active: bool = Field(title='Active', description='Whether this file tree is active')
+
+    file_tree_area_id: UUID | None = Field(default=None, foreign_key=f'{FileTreeArea.__tablename__}.id')
+    file_tree_area: FileTreeArea | None = Relationship(back_populates='file_trees')

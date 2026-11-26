@@ -28,14 +28,26 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import os
 from pathlib import PurePath
-from typing import Annotated, TypeAlias
+from re import Pattern, compile as re_compile
+from typing import Annotated, Final, TypeAlias
 
 from annotated_types import Predicate
-from pydantic import DirectoryPath, FilePath
+from pydantic import DirectoryPath, FilePath, StringConstraints
 
 
 AbsoluteDirectoryPath: TypeAlias = Annotated[DirectoryPath, Predicate(PurePath.is_absolute)]
 
 
 AbsoluteFilePath: TypeAlias = Annotated[FilePath, Predicate(PurePath.is_absolute)]
+
+
+
+DIRECTORY_NAME_LENGTH: Final[int] = 255
+
+
+DIRECTORY_NAME_PATTERN: Final[Pattern[str]] = re_compile(r'^[^.' + os.sep + r'](?:[^.' + os.sep + r'][^' + os.sep + r']*)?$')
+
+
+DirectoryName: TypeAlias = Annotated[str, StringConstraints(min_length=1, max_length=DIRECTORY_NAME_LENGTH, pattern=DIRECTORY_NAME_PATTERN)]

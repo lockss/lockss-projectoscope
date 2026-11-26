@@ -53,44 +53,22 @@ class AccessKeyView(GarageManagerView):
     _can_delete = True
 
     fields = [
-        UUIDField('id',
-                  version=4,
-                  label=AccessKey.model_fields['id'].title),
-        StringField('access_key_identifier',
-                    copy_to_clipboard=True,
-                    label=AccessKey.model_fields['access_key_identifier'].title),
-        StringField('name',
-                    label=AccessKey.model_fields['name'].title),
-        HasOne('user',
-               key='user',
-               label=(usr := AccessKey.model_fields['user_id']).title,
-               help_text=usr.description),
-        DateTimeField('created',
-                      output_format=DATETIME_FORMAT,
-                      label=(crd := AccessKey.model_fields['created']).title,
-                      help_text=crd.description),
-        DateTimeField('expiration',
-                      default=((exn := AccessKey.model_fields['expiration']).default_factory or (lambda: ''))(),
-                      output_format=DATETIME_FORMAT,
-                      label=exn.title,
-                      help_text=exn.description),
-        BooleanField('expired',
-                     label=AccessKey.model_fields['expired'].title,
-                     list_template = 'fields/list/text.html',
-                     detail_template = 'fields/detail/text.html'),
+        UUIDField('id', version=4, label=AccessKey.model_fields['id'].title),
+        StringField('access_key_identifier', copy_to_clipboard=True, label=AccessKey.model_fields['access_key_identifier'].title),
+        StringField('name', label=AccessKey.model_fields['name'].title),
+        HasOne('user', key='user', label=AccessKey.model_fields['user_id'].title),
+        DateTimeField('created', output_format=DATETIME_FORMAT, label=(crd := AccessKey.model_fields['created']).title, help_text=crd.description),
+        DateTimeField('expiration', default=((exn := AccessKey.model_fields['expiration']).default_factory or (lambda: ''))(), output_format=DATETIME_FORMAT, label=exn.title, help_text=exn.description),
+        BooleanField('expired', label=AccessKey.model_fields['expired'].title, list_template = 'fields/list/text.html', detail_template = 'fields/detail/text.html'),
     ]
 
     exclude_fields_from_create = ['access_key_identifier', 'name', 'created', 'expired']
-
-    exclude_fields_from_detail = []
-
     exclude_fields_from_edit = ['user'] # Couldn't make the select2 box disabled
-
     _non_editable_fields = ['access_key_identifier', 'name', 'created', 'expired']
-
-    exclude_fields_from_export = []
-
     exclude_fields_from_list = ['id', 'created']
+
+    fields_default_sort = ['name']
+    searchable_fields = ['id', 'access_key_identifier', 'user']
 
     def __init__(self, garage_manager_settings: GarageManagerSettings, *args, **kwargs) -> None:
         super().__init__(garage_manager_settings, AccessKey, *args, **kwargs)

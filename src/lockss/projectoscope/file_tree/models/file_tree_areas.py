@@ -28,16 +28,49 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Self
 from uuid import UUID, uuid4
 
-from sqlmodel import Field, SQLModel
+from pydantic import field_validator, model_validator, ModelWrapValidatorHandler
+from sqlmodel import Field, Relationship, SQLModel
+from starlette.requests import Request
 
-from ...pydantic.paths import AbsoluteDirectoryPath
+from ...pydantic.errors import make_field_error
+
+if TYPE_CHECKING:
+    from .file_trees import FileTree
 
 
-class FileTreeArea(SQLModel, table=True):
+class FileTreeAreaEdit(SQLModel):
+    active: bool = Field(title='Active', description='Whether this file tree area is active')
+
+
+class FileTreeArea(FileTreeAreaEdit, table=True):
     __tablename__ = 'file_tree_areas'
 
     id: UUID | None = Field(default_factory=uuid4, primary_key=True, index=True, title='UUID')
-    path: AbsoluteDirectoryPath = Field(title='Path', description='Absolute directory path')
-    active: bool = Field(title='Active', description='Whether this file tree area is active')
+    path: Path = Field(index=True, unique=True, title='Path', description='Absolute directory path')
+
+    file_trees: list['FileTree'] = Relationship(back_populates='file_tree_area')
+
+    def __admin_repr__(self, request: Request) -> str:
+        return f'{self.path!s}'
+
+    @field_validator('path', mode='after')
+    @classmethod
+    def _validate_path_is_absolute(cls, value: Path) -> Path:
+        if not value.is_absolute():
+            raise ValueError('Path must be absolute')
+        return value
+
+    @model_validator(mode='wrap')
+    @classmethod
+    def _validate_path_if_active(cls, data: Any, handler: ModelWrapValidatorHandler[Self]) -> Self:
+        mi: Self = handler(data)
+        if mi.active:
+            if not mi.path.exists():
+                raise make_field_error(cls, mi, ('path', 'value_error', 'Active path must exist', None))
+            if not mi.path.is_dir():
+                raise make_field_error(cls, mi, ('path', 'value_error', 'Active path must be a directory', None))
+        return mi

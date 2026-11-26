@@ -37,6 +37,8 @@ from lockss.pybasic.nodeutil import PortNumber
 from pydantic import Field, HttpUrl, IPvAnyAddress, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from ..pydantic.paths import AbsoluteDirectoryPath
+
 
 class OverseerSettings(BaseSettings):
     model_config = SettingsConfigDict(env_file='.env',
@@ -74,6 +76,8 @@ class FileTreeManagerSettings(BaseComponentSettings):
 
     type: Literal['file-tree'] = TYPE
     title: str = DEFAULT_TITLE
+    file_tree_area_prefixes: list[AbsoluteDirectoryPath] = Field(title='File Tree Area Prefixes',
+                                                                 description='Absolute directory paths that are approved ancestors of file tree areas')
 
 
 class GarageManagerSettings(BaseComponentSettings):

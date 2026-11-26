@@ -28,7 +28,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from ...config import FileTreeManagerSettings
 from ...starlette_admin.view import View
 from ..models.file_trees import FileTree
 
@@ -36,8 +35,5 @@ from ..models.file_trees import FileTree
 class FileTreeView(View):
     icon = 'fa-solid fa-folder-open'
 
-    _can_delete = False
-    _can_import = False
-
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(FileTree, *args, **kwargs)
+    def __init__(self) -> None:
+        super().__init__(FileTree)

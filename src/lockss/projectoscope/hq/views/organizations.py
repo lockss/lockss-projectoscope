@@ -29,7 +29,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from starlette.requests import Request
-from starlette_admin.fields import HasMany
+from starlette_admin import HasMany, HasOne, StringField, UUIDField
 
 from ...starlette_admin.view import View
 from ..models.organizations import Organization
@@ -37,16 +37,25 @@ from ..models.users import user_
 
 
 class OrganizationView(View):
-
     icon = 'fa-solid fa-people-roof'
-    fields = ['id', 'handle', 'name', 'short_name', 'initiative', HasMany('users', key='user')]
+
+    fields = [
+        UUIDField('id', version=4, label=Organization.model_fields['id'].title),
+        StringField('handle', label=Organization.model_fields['handle'].title),
+        StringField('name', label=Organization.model_fields['name'].title),
+        StringField('short_name', label=Organization.model_fields['short_name'].title),
+        HasOne('initiative', key='initiative'),
+        HasMany('users', key='user'),
+    ]
+
     exclude_fields_from_create = ['users']
     exclude_fields_from_list = ['id', 'users']
+
     fields_default_sort = ['name']
     searchable_fields = ['id', 'handle', 'name', 'short_name']
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(Organization, *args, **kwargs)
+    def __init__(self):
+        super().__init__(Organization)
 
     def is_accessible(self, request: Request) -> bool:
         return (u := user_(request)).active and u.admin

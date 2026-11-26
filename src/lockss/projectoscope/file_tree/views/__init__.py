@@ -27,3 +27,18 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
+
+from sqlmodel import SQLModel
+
+from ...config import FileTreeManagerSettings
+from ...starlette_admin.view import View
+
+
+class FileTreeManagerView(View):
+    file_tree_manager_settings: FileTreeManagerSettings
+
+    def __init__(self,
+                 file_tree_manager_settings: FileTreeManagerSettings,
+                 model: type[SQLModel]) -> None:
+        super().__init__(model)
+        self.file_tree_manager_settings = file_tree_manager_settings

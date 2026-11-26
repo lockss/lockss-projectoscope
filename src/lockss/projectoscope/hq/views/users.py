@@ -33,26 +33,36 @@ from typing import Any
 from boltons.iterutils import partition
 from boltons.strutils import unit_len
 from starlette.requests import Request
-from starlette_admin import ActionSelection, BaseField, ComputedField, RequestAction, action, flash
+from starlette_admin import ActionSelection, BaseField, BooleanField, ComputedField, EmailField, HasOne, RequestAction, StringField, UUIDField, action, flash
 
 from ...starlette_admin.view import View, COMPUTED_FIELD_ACTIONS, NON_COMPUTED_FIELD_ACTIONS
 from ..models.users import User, user_, BCRYPT_HASH_LENGTH
 
 
 class UserView(View):
-
     icon = 'fa-solid fa-circle-user'
     _can_create = False
-    fields = ['id', 'handle', 'first_name', 'last_name',
-              ComputedField('full_name', getter=lambda req, obj: obj.full_name()),
-              'email',
-              'organization', 'active', 'admin', 'superuser']
-    exclude_fields_from_list = ['id']
-    fields_default_sort = ['last_name', 'first_name', 'handle']
-    searchable_fields = ['handle', 'first_name', 'last_name', 'email']
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(User, *args, **kwargs)
+    fields = [
+        UUIDField('id', version=4, label=User.model_fields['id'].title),
+        StringField('handle', label=User.model_fields['handle'].title),
+        StringField('first_name', label=User.model_fields['first_name'].title),
+        StringField('last_name', label=User.model_fields['last_name'].title),
+        ComputedField('full_name', getter=lambda req, obj: obj.full_name()),
+        EmailField('email', label=User.model_fields['email'].title),
+        HasOne('organization', key='organization'),
+        BooleanField('active', label=User.model_fields['active'].title),
+        BooleanField('admin', label=User.model_fields['admin'].title),
+        BooleanField('superuser', label=User.model_fields['superuser'].title),
+    ]
+
+    exclude_fields_from_list = ['id']
+
+    fields_default_sort = ['last_name', 'first_name', 'handle']
+    searchable_fields = ['id', 'handle', 'first_name', 'last_name', 'email']
+
+    def __init__(self):
+        super().__init__(User)
 
     def can_access_field(self, request: Request, field: BaseField, action: RequestAction | None = None) -> bool:
         action = action or request.state.action
